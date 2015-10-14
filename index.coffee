@@ -5,13 +5,13 @@ fs          = require 'ssh2-fs'
 
 httpPort    = process.env.HTTP_PORT or 80
 baseDir     = process.env.BASE_DIR or '/tmp'
-host        = process.env.HOST_ADDR or '172.17.42.1'
+hostAddr        = process.env.HOST_ADDR or '172.17.42.1'
 username    = process.env.USER or 'core'
 privateKeyPath = process.env.PRIVATE_KEY or '~/.ssh/id_rsa'
 
 console.log
   baseDir: baseDir
-  host: host
+  hostAddr: hostAddr
   username: username
   privateKeyPath: privateKeyPath
 
@@ -20,7 +20,7 @@ app.use bodyParser.json()
 app.use bodyParser.urlencoded extended: false
 
 withSsh = (cb) ->
-  ssh host: host, username: username, privateKeyPath: privateKeyPath, (err, sess) ->
+  ssh {host: hostAddr, username: username, privateKeyPath: privateKeyPath}, (err, sess) ->
     if err
       console.error err
     else
