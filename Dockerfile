@@ -1,4 +1,4 @@
-FROM mhart/alpine-node
+FROM mhart/alpine-node:4.2
 
 RUN apk add --update bash openssh
 
