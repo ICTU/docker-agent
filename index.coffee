@@ -14,7 +14,11 @@ app.use bodyParser.json()
 app.use bodyParser.urlencoded extended: false
 
 withSsh = (cb) ->
-  ssh host: host, username: username, privateKeyPath: privateKeyPath, cb
+  ssh host: host, username: username, privateKeyPath: privateKeyPath, (err, sess) ->
+    if err
+      console.error
+    else
+      cb and cb(sess)
 
 exec = (sess, scriptPath) ->
   sess.exec "bash #{scriptPath}", (err, stream) ->
@@ -36,7 +40,7 @@ run = (action) -> (req, res) ->
   scriptPath = "/#{scriptDir}/#{action}.sh"
 
   if dir
-    withSsh (err, sess) ->
+    withSsh (sess) ->
       fs.mkdir sess, scriptDir, (err) ->
         if not err or err.code is 'EEXIST'
           fs.exists sess, scriptPath, (err, exists) ->
@@ -60,7 +64,7 @@ app.post '/app/install-and-run', (req, res) ->
   stopScriptPath = "/#{scriptDir}/stop.sh"
 
   if dir and startScript and stopScript
-    withSsh (err, sess) ->
+    withSsh (sess) ->
       fs.mkdir sess, scriptDir, (err) ->
         if not err or err.code is 'EEXIST'
           writeFile sess, stopScriptPath, stopScript
