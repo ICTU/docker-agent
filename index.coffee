@@ -13,6 +13,43 @@ app = express()
 app.use bodyParser.json()
 app.use bodyParser.urlencoded extended: false
 
+withSsh = (cb) ->
+  ssh host: host, username: username, privateKeyPath: privateKeyPath, cb
+
+exec = (sess, scriptPath) ->
+  sess.exec "bash #{scriptPath}", (err, stream) ->
+    console.log err if err
+    console.log "Executing #{scriptPath}"
+    stream.on 'data', (data) ->
+      console.log "#{data}"
+
+writeFile = (sess, scriptPath, script, cb) ->
+  fs.writeFile sess, scriptPath, script, (err) ->
+    console.log "Created file #{scriptPath}" if not err
+    console.error err if err
+    cb and cb()
+
+run = (action) -> (req, res) ->
+  data = req.body
+  dir = data.dir
+  scriptDir = "/#{baseDir}/#{dir}"
+  scriptPath = "/#{scriptDir}/#{action}.sh"
+
+  if dir
+    withSsh (err, sess) ->
+      fs.mkdir sess, scriptDir, (err) ->
+        if not err or err.code is 'EEXIST'
+          fs.exists sess, scriptPath, (err, exists) ->
+            console.error err if err
+            if exists
+              exec sess, scriptPath
+            else
+              console.error "#{scriptPath} does not exist!"
+
+    res.end('Thank you, come again!')
+  else
+    res.status(422).end('Please, provide all required parameters: dir')
+
 app.post '/app/install-and-run', (req, res) ->
   data = req.body
   startScript = data.startScript
@@ -23,28 +60,21 @@ app.post '/app/install-and-run', (req, res) ->
   stopScriptPath = "/#{scriptDir}/stop.sh"
 
   if dir and startScript and stopScript
-    ssh host: host, username: username, privateKeyPath: privateKeyPath, (err, sess) ->
+    withSsh (err, sess) ->
       fs.mkdir sess, scriptDir, (err) ->
         if not err or err.code is 'EEXIST'
-          fs.writeFile sess, stopScriptPath, stopScript, (err) ->
-            console.log "Created file #{stopScriptPath}" if not err
-            console.log err if err
-
-          fs.writeFile sess, startScriptPath, startScript, (err) ->
-            console.log "Created file #{startScriptPath}" if not err
-            console.log err if err
-
-            sess.exec "bash #{startScriptPath}", (err, stream) ->
-              console.log err if err
-              stream.on 'data', (data) ->
-                console.log 'Executing script...'
-                console.log "#{data}"
+          writeFile sess, stopScriptPath, stopScript
+          fs.writeFile sess, startScriptPath, startScript,  ->
+            exec sess, startScriptPath
         else
-          console.error 'Cannot make script dir.', err
+          console.error "Cannot make script dir #{scriptDir}", err
 
     res.end('Thank you, come again!')
   else
     res.status(422).end('Please, provide all required parameters: dir, startScript, stopScript')
+
+app.post '/app/start', run('start')
+app.post '/app/stop', run('stop')
 
 server = app.listen httpPort, ->
   host = server.address().address
