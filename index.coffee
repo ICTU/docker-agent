@@ -6,7 +6,7 @@ fs          = require 'ssh2-fs'
 httpPort    = process.env.HTTP_PORT or 80
 baseDir     = process.env.BASE_DIR or '/tmp'
 hostAddr        = process.env.HOST_ADDR or '172.17.42.1'
-username    = process.env.USER or 'root'
+username    = process.env.USER or 'core'
 privateKeyPath = process.env.PRIVATE_KEY or '~/.ssh/id_rsa'
 
 console.log
@@ -27,7 +27,7 @@ withSsh = (cb) ->
       cb and cb(sess)
 
 exec = (sess, scriptPath) ->
-  sess.exec "bash #{scriptPath}", (err, stream) ->
+  sess.exec "sudo bash #{scriptPath}", (err, stream) ->
     if err
       console.error err
     else
