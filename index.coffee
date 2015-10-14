@@ -64,7 +64,7 @@ app.post '/app/install-and-run', (req, res) ->
       fs.mkdir sess, scriptDir, (err) ->
         if not err or err.code is 'EEXIST'
           writeFile sess, stopScriptPath, stopScript
-          fs.writeFile sess, startScriptPath, startScript,  ->
+          writeFile sess, startScriptPath, startScript,  ->
             exec sess, startScriptPath
         else
           console.error "Cannot make script dir #{scriptDir}", err
