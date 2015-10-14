@@ -9,6 +9,12 @@ host        = process.env.HOST_ADDR or '172.17.42.1'
 username    = process.env.USER or 'core'
 privateKeyPath = process.env.PRIVATE_KEY or '~/.ssh/id_rsa'
 
+console.log
+  baseDir: baseDir
+  host: host
+  username: username
+  privateKeyPath: privateKeyPath
+
 app = express()
 app.use bodyParser.json()
 app.use bodyParser.urlencoded extended: false
@@ -16,22 +22,26 @@ app.use bodyParser.urlencoded extended: false
 withSsh = (cb) ->
   ssh host: host, username: username, privateKeyPath: privateKeyPath, (err, sess) ->
     if err
-      console.error
+      console.error err
     else
       cb and cb(sess)
 
 exec = (sess, scriptPath) ->
   sess.exec "bash #{scriptPath}", (err, stream) ->
-    console.log err if err
-    console.log "Executing #{scriptPath}"
-    stream.on 'data', (data) ->
-      console.log "#{data}"
+    if err
+      console.error err
+    else
+      console.log "Executing #{scriptPath}"
+      stream.on 'data', (data) ->
+        console.log "#{data}"
 
 writeFile = (sess, scriptPath, script, cb) ->
   fs.writeFile sess, scriptPath, script, (err) ->
-    console.log "Created file #{scriptPath}" if not err
-    console.error err if err
-    cb and cb()
+    if err
+      console.error err
+    else
+      console.log "Created file #{scriptPath}" if not err
+      cb and cb()
 
 run = (action) -> (req, res) ->
   data = req.body
@@ -44,11 +54,13 @@ run = (action) -> (req, res) ->
       fs.mkdir sess, scriptDir, (err) ->
         if not err or err.code is 'EEXIST'
           fs.exists sess, scriptPath, (err, exists) ->
-            console.error err if err
-            if exists
-              exec sess, scriptPath
+            if err
+              console.error err
             else
-              console.error "#{scriptPath} does not exist!"
+              if exists
+                exec sess, scriptPath
+              else
+                console.error "#{scriptPath} does not exist!"
 
     res.end('Thank you, come again!')
   else
