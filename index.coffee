@@ -6,7 +6,7 @@ fs          = require 'ssh2-fs'
 httpPort    = process.env.HTTP_PORT or 80
 baseDir     = process.env.BASE_DIR or '/tmp'
 hostAddr        = process.env.HOST_ADDR or '172.17.42.1'
-username    = process.env.USER or 'core'
+username    = process.env.USER or 'root'
 privateKeyPath = process.env.PRIVATE_KEY or '~/.ssh/id_rsa'
 
 console.log
