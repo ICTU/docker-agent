@@ -26,12 +26,14 @@ withSsh = (cb) ->
     else
       cb and cb(sess)
 
-exec = (sess, scriptPath) ->
-  sess.exec "sudo bash #{scriptPath}", (err, stream) ->
+exec = (sess, scriptPath, cb) ->
+  sess.exec "bash #{scriptPath}", (err, stream) ->
     if err
       console.error err
     else
       console.log "Executing #{scriptPath}"
+      console.log "------------------------------------------------------------"
+      cb and cb(stream)
       stream.on 'data', (data) ->
         console.log "#{data}"
 
@@ -42,6 +44,11 @@ writeFile = (sess, scriptPath, script, cb) ->
     else
       console.log "Created file #{scriptPath}" if not err
       cb and cb()
+
+pipeTo = (res) -> (stream) ->
+  stream.on 'data', (data) -> res.write "#{data}"
+  stream.stderr.on 'data', (data) -> res.write "ERROR: #{data}"
+  stream.on 'close', -> res.end()
 
 run = (action) -> (req, res) ->
   data = req.body
@@ -58,11 +65,9 @@ run = (action) -> (req, res) ->
               console.error err
             else
               if exists
-                exec sess, scriptPath
+                exec sess, scriptPath, pipeTo(res)
               else
                 console.error "#{scriptPath} does not exist!"
-
-    res.end('Thank you, come again!')
   else
     res.status(422).end('Please, provide all required parameters: dir')
 
@@ -81,11 +86,9 @@ app.post '/app/install-and-run', (req, res) ->
         if not err or err.code is 'EEXIST'
           writeFile sess, stopScriptPath, stopScript
           writeFile sess, startScriptPath, startScript,  ->
-            exec sess, startScriptPath
+            exec sess, startScriptPath, pipeTo(res)
         else
           console.error "Cannot make script dir #{scriptDir}", err
-
-    res.end('Thank you, come again!')
   else
     res.status(422).end('Please, provide all required parameters: dir, startScript, stopScript')
 
