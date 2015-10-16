@@ -27,7 +27,7 @@ withSsh = (cb) ->
       cb and cb(sess)
 
 exec = (sess, scriptPath, cb) ->
-  sess.exec "bash #{scriptPath}", (err, stream) ->
+  sess.exec "sudo bash #{scriptPath}", (err, stream) ->
     if err
       console.error err
     else
