@@ -95,6 +95,8 @@ app.post '/app/install-and-run', (req, res) ->
 app.post '/app/start', run('start')
 app.post '/app/stop', run('stop')
 
+app.get '/ping', (req, res) -> res.end('pong')
+
 server = app.listen httpPort, ->
   host = server.address().address
   port = server.address().port
