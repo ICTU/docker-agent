@@ -2,22 +2,35 @@ express     = require 'express'
 bodyParser  = require 'body-parser'
 ssh         = require 'ssh2-connect'
 fs          = require 'ssh2-fs'
+_           = require 'lodash'
 
-httpPort    = process.env.HTTP_PORT or 80
-baseDir     = process.env.BASE_DIR or '/tmp'
-hostAddr        = process.env.HOST_ADDR or '172.17.42.1'
-username    = process.env.USER or 'core'
+httpPort       = process.env.HTTP_PORT or 80
+baseDir        = process.env.BASE_DIR or '/tmp'
+hostAddr       = process.env.HOST_ADDR or '172.17.42.1'
+username       = process.env.USER or 'core'
 privateKeyPath = process.env.PRIVATE_KEY or '~/.ssh/id_rsa'
+ipPrefix       = process.env.IP_PREFIX or '10.25'
 
 console.log
   baseDir: baseDir
   hostAddr: hostAddr
   username: username
   privateKeyPath: privateKeyPath
+  ipPrefix: ipPrefix
 
 app = express()
 app.use bodyParser.json()
 app.use bodyParser.urlencoded extended: false
+
+ip = _.chain(require('os').networkInterfaces())
+    .values()
+    .flatten()
+    .find((iface) -> iface.address.indexOf(ipPrefix) is 0 )
+    .value()
+    .address
+
+augmentWithAgentIP = (script) ->
+  script.replace /_AGENT_IP_/g, ip
 
 withSsh = (cb) ->
   ssh {host: hostAddr, username: username, privateKeyPath: privateKeyPath}, (err, sess) ->
@@ -85,7 +98,7 @@ app.post '/app/install-and-run', (req, res) ->
       fs.mkdir sess, scriptDir, (err) ->
         if not err or err.code is 'EEXIST'
           writeFile sess, stopScriptPath, stopScript
-          writeFile sess, startScriptPath, startScript,  ->
+          writeFile sess, startScriptPath, augmentWithAgentIP(startScript),  ->
             exec sess, startScriptPath, pipeTo(res)
         else
           console.error "Cannot make script dir #{scriptDir}", err
