@@ -5,11 +5,14 @@ fs          = require 'ssh2-fs'
 _           = require 'lodash'
 
 httpPort       = process.env.HTTP_PORT or 80
+useSudo        = process.env.USE_SUDO != 'false'
 baseDir        = process.env.BASE_DIR or '/tmp'
 hostAddr       = process.env.HOST_ADDR or '172.17.42.1'
 username       = process.env.USER or 'core'
 privateKeyPath = process.env.PRIVATE_KEY or '~/.ssh/id_rsa'
 ipPrefix       = process.env.IP_PREFIX or '10.25'
+
+sudo = if useSudo then 'sudo ' else ''
 
 console.log
   baseDir: baseDir
@@ -17,6 +20,7 @@ console.log
   username: username
   privateKeyPath: privateKeyPath
   ipPrefix: ipPrefix
+  useSudo: useSudo
 
 app = express()
 app.use bodyParser.json()
@@ -37,10 +41,10 @@ withSsh = (cb) ->
     if err
       console.error err
     else
-      cb and cb(sess)
+      cb?(sess, -> sess.end())
 
 exec = (sess, scriptPath, cb) ->
-  sess.exec "sudo bash #{scriptPath}", (err, stream) ->
+  sess.exec "#{sudo}bash #{scriptPath}", (err, stream) ->
     if err
       console.error err
     else
@@ -58,10 +62,12 @@ writeFile = (sess, scriptPath, script, cb) ->
       console.log "Created file #{scriptPath}" if not err
       cb and cb()
 
-pipeTo = (res) -> (stream) ->
+pipeTo = (res, closeConnection) -> (stream) ->
   stream.on 'data', (data) -> res.write "#{data}"
   stream.stderr.on 'data', (data) -> res.write "ERROR: #{data}"
-  stream.on 'close', -> res.end()
+  stream.on 'close', ->
+    closeConnection()
+    setTimeout (-> res.end()), 0
 
 run = (action) -> (req, res) ->
   data = req.body
@@ -70,17 +76,21 @@ run = (action) -> (req, res) ->
   scriptPath = "/#{scriptDir}/#{action}.sh"
 
   if dir
-    withSsh (sess) ->
+    withSsh (sess, closeConnection) ->
       fs.mkdir sess, scriptDir, (err) ->
         if not err or err.code is 'EEXIST'
           fs.exists sess, scriptPath, (err, exists) ->
             if err
               console.error err
+              closeConnection()
             else
               if exists
-                exec sess, scriptPath, pipeTo(res)
+                exec sess, scriptPath, pipeTo(res, closeConnection)
               else
                 console.error "#{scriptPath} does not exist!"
+                closeConnection()
+        else
+          closeConnection()
   else
     res.status(422).end('Please, provide all required parameters: dir')
 
@@ -94,14 +104,15 @@ app.post '/app/install-and-run', (req, res) ->
   stopScriptPath = "/#{scriptDir}/stop.sh"
 
   if dir and startScript and stopScript
-    withSsh (sess) ->
+    withSsh (sess, closeConnection) ->
       fs.mkdir sess, scriptDir, (err) ->
         if not err or err.code is 'EEXIST'
           writeFile sess, stopScriptPath, stopScript
           writeFile sess, startScriptPath, augmentWithAgentIP(startScript),  ->
-            exec sess, startScriptPath, pipeTo(res)
+            exec sess, startScriptPath, pipeTo(res, closeConnection)
         else
           console.error "Cannot make script dir #{scriptDir}", err
+          closeConnection()
   else
     res.status(422).end('Please, provide all required parameters: dir, startScript, stopScript')
 
