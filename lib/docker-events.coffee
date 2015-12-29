@@ -42,7 +42,7 @@ module.exports = (socketPath) ->
               console.warn "Cannot update container dockerInspectInfo, no agent labels found. Container #{containerId}."
         delete functionCache[containerId]
 
-      f = functionCache[containerId] = _.debounce f, 500
+      f = functionCache[containerId] = _.debounce f, 1000
       f()
 
   # Parse json objects from the Docker event stream.
