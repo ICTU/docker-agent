@@ -50,7 +50,7 @@ module.exports = (socketPath) ->
   jsonStream.on 'error', (err) -> console.error 'Error while parsing Docker Event stream', err
   jsonStream.on 'data', (event) ->
     console.log "Container #{event.id} changed status to #{event.status}"
-    updateContainerStatus event.id
+    updateContainerStatus event.id unless event.status is 'pull'
 
   # Get events from the Docker socket and pass them to a json stream parser.
   docker = new Docker socketPath: socketPath
