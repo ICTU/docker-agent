@@ -1,8 +1,9 @@
-express     = require 'express'
-bodyParser  = require 'body-parser'
-ssh         = require 'ssh2-connect'
-fs          = require 'ssh2-fs'
-_           = require 'lodash'
+express       = require 'express'
+bodyParser    = require 'body-parser'
+ssh           = require 'ssh2-connect'
+fs            = require 'ssh2-fs'
+_             = require 'lodash'
+docker_events = require './lib/docker-events'
 
 httpPort       = process.env.HTTP_PORT or 80
 useSudo        = process.env.USE_SUDO != 'false'
@@ -11,6 +12,8 @@ hostAddr       = process.env.HOST_ADDR or '172.17.42.1'
 username       = process.env.USER or 'core'
 privateKeyPath = process.env.PRIVATE_KEY or '~/.ssh/id_rsa'
 ipPrefix       = process.env.IP_PREFIX or '10.25'
+agentIp        = process.env.AGENT_IP
+dockerSocket   = process.env.DOCKER_SOCKET_PATH or '/var/run/docker.sock'
 
 sudo = if useSudo then 'sudo ' else ''
 
@@ -21,17 +24,21 @@ console.log
   privateKeyPath: privateKeyPath
   ipPrefix: ipPrefix
   useSudo: useSudo
+  agentIp: agentIp or 'dynamic'
 
 app = express()
 app.use bodyParser.json()
 app.use bodyParser.urlencoded extended: false
 
-ip = _.chain(require('os').networkInterfaces())
-    .values()
-    .flatten()
-    .find((iface) -> iface.address.indexOf(ipPrefix) is 0 )
-    .value()
-    .address
+if agentIp
+  ip = agentIp
+else
+  ip = _.chain(require('os').networkInterfaces())
+      .values()
+      .flatten()
+      .find((iface) -> iface.address.indexOf(ipPrefix) is 0 )
+      .value()
+      .address
 
 augmentWithAgentIP = (script) ->
   script.replace /_AGENT_IP_/g, ip
@@ -125,3 +132,6 @@ server = app.listen httpPort, ->
   host = server.address().address
   port = server.address().port
   console.log 'Listening on http://%s:%s', host, port
+
+# initialize the docker event sourcing
+docker_events dockerSocket
