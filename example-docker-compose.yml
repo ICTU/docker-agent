@@ -1,0 +1,8 @@
+agent:
+  image: docker-registry.isd.ictu:5000/dashboard-agent
+  environment:
+    - USER=core
+    - BASE_DIR=/home/core
+    - PRIVATE_KEY=/root/.ssh/id_rsa
+  volumes:
+    - /root/.ssh:/root/.ssh:ro
