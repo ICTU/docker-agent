@@ -4,18 +4,17 @@ JSONStream    = require 'JSONStream'
 request       = require 'request'
 _             = require 'underscore'
 
-postContainerStatus = (url, serviceName, containerId, status) ->
-  console.log "Container #{containerId} changed status to '#{status}'"
+postContainerInspectInfo = (url, serviceName, containerId, inspectInfo) ->
   request
     url: url
     method: "POST"
     json: true
-    body: "services.#{serviceName}.status": status
+    body: "services.#{serviceName}.dockerInspectInfo": inspectInfo
     , (error, response, body) ->
       if error
-        console.error "Error occured while trying to update the status to '#{status}' for container #{containerId} on url #{url}", error
+        console.error "Error occured while trying to update the dockerInspectInfo for container #{containerId} on url #{url}", error
       else
-        console.log "Updated container status on url #{url} for container #{containerId}"
+        console.log "Updated dockerInspectInfo for container #{containerId} on url #{url} "
 
 
 module.exports = (socketPath) ->
@@ -36,12 +35,11 @@ module.exports = (socketPath) ->
           else
             url = data.Config?.Labels?._AGENT_DCMNTRY_URL
             service = data.Config?.Labels?._AGENT_SERVICE
-            status = data.State.Status
 
             if url and service
-              postContainerStatus url, service, containerId, status
+              postContainerInspectInfo url, service, containerId, data
             else
-              console.warn "Cannot update container status, no agent labels found. Container #{containerId} changed status to '#{status}'"
+              console.warn "Cannot update container dockerInspectInfo, no agent labels found. Container #{containerId}."
         delete functionCache[containerId]
 
       f = functionCache[containerId] = _.debounce f, 500
@@ -51,6 +49,7 @@ module.exports = (socketPath) ->
   jsonStream = JSONStream.parse()
   jsonStream.on 'error', (err) -> console.error 'Error while parsing Docker Event stream', err
   jsonStream.on 'data', (event) ->
+    console.log "Container #{event.id} changed status to #{event.status}"
     updateContainerStatus event.id
 
   # Get events from the Docker socket and pass them to a json stream parser.
