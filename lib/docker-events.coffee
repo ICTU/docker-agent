@@ -4,12 +4,12 @@ JSONStream    = require 'JSONStream'
 request       = require 'request'
 _             = require 'underscore'
 
-postContainerInspectInfo = (url, serviceName, containerId, inspectInfo) ->
+postContainerInspectInfo = (url, containerId, inspectInfo) ->
   request
     url: url
     method: "POST"
     json: true
-    body: "services.#{serviceName}.dockerInspectInfo": inspectInfo
+    body: "dockerInspectInfo": inspectInfo
     , (error, response, body) ->
       if error
         console.error "Error occured while trying to update the dockerInspectInfo for container #{containerId} on url #{url}", error
@@ -33,13 +33,11 @@ module.exports = (socketPath) ->
           if err
             console.error "Error occured while inspecting container #{containerId}", err
           else
-            url = data.Config?.Labels?._AGENT_DCMNTRY_URL
-            service = data.Config?.Labels?._AGENT_SERVICE
-
-            if url and service
-              postContainerInspectInfo url, service, containerId, data
+            url = data.Config?.Labels?['iqt.dockerInspectInfoUrl']
+            if url
+              postContainerInspectInfo url, containerId, data
             else
-              console.warn "Cannot update container dockerInspectInfo, no agent labels found. Container #{containerId}."
+              console.warn "Cannot update container dockerInspectInfo, 'iqt.dockerInspectInfoUrl' label was not found. Container #{containerId}."
         delete functionCache[containerId]
 
       f = functionCache[containerId] = _.debounce f, 1000
