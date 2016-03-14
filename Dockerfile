@@ -1,6 +1,11 @@
-FROM mhart/alpine-node:4.2
+FROM docker:1.10
 
-RUN apk add --update bash openssh
+RUN apk --update --no-cache add nodejs bash jq nmap-ncat
+
+RUN curl -Ss -L https://github.com/coreos/etcd/releases/download/v2.2.5/etcd-v2.2.5-linux-amd64.tar.gz -o /tmp/etcd-v2.2.5-linux-amd64.tar.gz \
+  && tar xzvf /tmp/etcd-v2.2.5-linux-amd64.tar.gz -C /tmp/ \
+  && mv /tmp/etcd-v2.2.5-linux-amd64/etcdctl /usr/bin/etcdctl \
+  && rm -rf /tmp/etcd-v2.2.5-linux-amd64*
 
 ADD . /app
 
