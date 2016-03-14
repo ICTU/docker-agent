@@ -1,8 +1,7 @@
 Docker        = require 'dockerode'
-str2stream    = require 'string-to-stream'
 JSONStream    = require 'JSONStream'
 request       = require 'request'
-_             = require 'underscore'
+_             = require 'lodash'
 
 postContainerInspectInfo = (url, containerId, inspectInfo) ->
   request
@@ -53,11 +52,14 @@ module.exports = (socketPath) ->
   # Get events from the Docker socket and pass them to a json stream parser.
   docker = new Docker socketPath: socketPath
   docker.getEvents (err, data) ->
-    console.error 'Error occured while reading Docker Event from socket', err if err
-    data.on 'data', (chunk) -> jsonStream.write chunk
+    if err
+      console.error 'Error occured while reading Docker Event from socket', err
+    else
+      data.on 'data', (chunk) -> jsonStream.write chunk
 
 
   # Initially, try to update the status of all containers
   docker.listContainers all:true, (err, containers) ->
-    containers.forEach (containerInfo) ->
-      updateContainerStatus containerInfo.Id
+    if containers?.length
+      containers.forEach (containerInfo) ->
+        updateContainerStatus containerInfo.Id
