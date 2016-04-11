@@ -1,4 +1,4 @@
-FROM docker:1.10
+FROM docker:1.9
 
 RUN apk --update --no-cache add nodejs bash jq nmap-ncat
 

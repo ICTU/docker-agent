@@ -12,8 +12,6 @@ postContainerInspectInfo = (url, containerId, inspectInfo) ->
     , (error, response, body) ->
       if error
         console.error "Error occured while trying to update the dockerInspectInfo for container #{containerId} on url #{url}", error
-      else
-        console.log "Updated dockerInspectInfo for container #{containerId} on url #{url} "
 
 
 module.exports = (socketPath) ->
@@ -35,8 +33,6 @@ module.exports = (socketPath) ->
             url = data.Config?.Labels?['iqt.dockerInspectInfoUrl']
             if url
               postContainerInspectInfo url, containerId, data
-            else
-              console.warn "Cannot update container dockerInspectInfo, 'iqt.dockerInspectInfoUrl' label was not found. Container #{containerId}."
         delete functionCache[containerId]
 
       f = functionCache[containerId] = _.debounce f, 1000
@@ -46,7 +42,6 @@ module.exports = (socketPath) ->
   jsonStream = JSONStream.parse()
   jsonStream.on 'error', (err) -> console.error 'Error while parsing Docker Event stream', err
   jsonStream.on 'data', (event) ->
-    console.log "Container #{event.id} changed status to #{event.status}"
     updateContainerStatus event.id unless event.status is 'pull'
 
   # Get events from the Docker socket and pass them to a json stream parser.
