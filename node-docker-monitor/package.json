@@ -1,0 +1,86 @@
+{
+  "_args": [
+    [
+      "node-docker-monitor@^1.0.3",
+      "c:\\isd\\dashboard-agent"
+    ]
+  ],
+  "_from": "node-docker-monitor@>=1.0.3 <2.0.0",
+  "_id": "node-docker-monitor@1.0.5",
+  "_inCache": true,
+  "_installable": true,
+  "_location": "/node-docker-monitor",
+  "_nodeVersion": "0.12.7",
+  "_npmOperationalInternal": {
+    "host": "packages-12-west.internal.npmjs.com",
+    "tmp": "tmp/node-docker-monitor-1.0.5.tgz_1459476197712_0.22527865832671523"
+  },
+  "_npmUser": {
+    "email": "andrey.chausenko@gmail.com",
+    "name": "beh01der"
+  },
+  "_npmVersion": "2.11.3",
+  "_phantomChildren": {},
+  "_requested": {
+    "name": "node-docker-monitor",
+    "raw": "node-docker-monitor@^1.0.3",
+    "rawSpec": "^1.0.3",
+    "scope": null,
+    "spec": ">=1.0.3 <2.0.0",
+    "type": "range"
+  },
+  "_requiredBy": [
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/node-docker-monitor/-/node-docker-monitor-1.0.5.tgz",
+  "_shasum": "3a8b230677f9ccedb5653829b0e4d775c16b5f2c",
+  "_shrinkwrap": null,
+  "_spec": "node-docker-monitor@^1.0.3",
+  "_where": "c:\\isd\\dashboard-agent",
+  "author": {
+    "email": "andrey.chausenko@gmail.com",
+    "name": "Andrey Chausenko",
+    "url": "https://memz.co"
+  },
+  "bugs": {
+    "url": "https://github.com/Beh01der/node-docker-monitor/issues"
+  },
+  "dependencies": {
+    "collections": "3.0.0",
+    "dockerode": "2.2.10"
+  },
+  "description": "Docker monitor helping to maintain list of running containers",
+  "devDependencies": {},
+  "directories": {},
+  "dist": {
+    "shasum": "3a8b230677f9ccedb5653829b0e4d775c16b5f2c",
+    "tarball": "https://registry.npmjs.org/node-docker-monitor/-/node-docker-monitor-1.0.5.tgz"
+  },
+  "gitHead": "60e387351e32eefd770150b77449e82050d45a12",
+  "homepage": "https://github.com/Beh01der/node-docker-monitor",
+  "keywords": [
+    "docker",
+    "monitor",
+    "container",
+    "event"
+  ],
+  "license": "ISC",
+  "main": "./lib/index.js",
+  "maintainers": [
+    {
+      "email": "andrey.chausenko@gmail.com",
+      "name": "beh01der"
+    }
+  ],
+  "name": "node-docker-monitor",
+  "optionalDependencies": {},
+  "readme": "ERROR: No README data found!",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Beh01der/node-docker-monitor.git"
+  },
+  "scripts": {
+    "test": "node ./lib/test.js"
+  },
+  "version": "1.0.5"
+}
