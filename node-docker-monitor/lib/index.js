@@ -12,18 +12,16 @@ module.exports = function (handler, opts) {
         docker = new Docker({ socketPath: '/var/run/docker.sock' });
     }
 
-    var trackedEvents = ['create', 'restart', 'start', 'destroy', 'die', 'kill', 'stop', 'oom'];
-
     function handleEvent(event, handler) {
-      docker.getContainer(event.id).inspect(function (err,data) {
-        handler && handler(event, data, docker);
-      });
+      setTimeout(function() {
+        docker.getContainer(event.id).inspect(function (err,data) {
+          handler && handler(event, data, docker);
+        });
+      }, 500);
     }
 
     function processDockerEvent(event, stop) {
-      if (trackedEvents.indexOf(event.status) !== -1) {
-        handleEvent(event, handler);
-      }
+      handleEvent(event, handler);
     }
 
     // start monitoring docker events
