@@ -1,30 +1,19 @@
 express       = require 'express'
 bodyParser    = require 'body-parser'
-ssh           = require 'ssh2-connect'
-fs            = require 'ssh2-fs'
+fs            = require 'fs'
 _             = require 'lodash'
 docker_events = require './lib/docker-events'
+child_process  = require 'child_process'
 
 httpPort       = process.env.HTTP_PORT or 80
-useSudo        = process.env.USE_SUDO != 'false'
 baseDir        = process.env.BASE_DIR or '/tmp'
-hostAddr       = process.env.HOST_ADDR or '172.17.42.1'
-username       = process.env.USER or 'core'
-privateKeyPath = process.env.PRIVATE_KEY or '~/.ssh/id_rsa'
 ipPrefix       = process.env.IP_PREFIX or '10.25'
 agentIp        = process.env.AGENT_IP
-dockerHost     = process.env.DOCKER_SOCKET_PATH or 'http://10.25.85.10'
-dockerPort     = process.env.DOCKER_SOCKET_PORT or '2375'
-
-sudo = if useSudo then 'sudo ' else ''
+dockerSocket     = process.env.DOCKER_SOCKET_PATH or '/var/run/docker.sock'
 
 console.log
   baseDir: baseDir
-  hostAddr: hostAddr
-  username: username
-  privateKeyPath: privateKeyPath
   ipPrefix: ipPrefix
-  useSudo: useSudo
   agentIp: agentIp or 'dynamic'
 
 app = express()
@@ -37,45 +26,20 @@ else
   ip = _.chain(require('os').networkInterfaces())
       .values()
       .flatten()
-      # .find((iface) -> iface.address.indexOf(ipPrefix) is 0 )
+      .find((iface) -> iface.address.indexOf(ipPrefix) is 0 )
       .value()
       .address
 
 augmentWithAgentIP = (script) ->
   script.replace /_AGENT_IP_/g, ip
 
-withSsh = (cb) ->
-  ssh {host: hostAddr, username: username, privateKeyPath: privateKeyPath}, (err, sess) ->
-    if err
-      console.error err
-    else
-      cb?(sess, -> sess.end())
-
-exec = (sess, scriptPath, cb) ->
-  sess.exec "#{sudo}bash #{scriptPath}", (err, stream) ->
-    if err
-      console.error err
-    else
-      console.log "Executing #{scriptPath}"
-      console.log "------------------------------------------------------------"
-      cb and cb(stream)
-      stream.on 'data', (data) ->
-        console.log "#{data}"
-
-writeFile = (sess, scriptPath, script, cb) ->
-  fs.writeFile sess, scriptPath, script, (err) ->
+writeFile = (scriptPath, script, cb) ->
+  fs.writeFile scriptPath, script, (err) ->
     if err
       console.error err
     else
       console.log "Created file #{scriptPath}" if not err
       cb and cb()
-
-pipeTo = (res, closeConnection) -> (stream) ->
-  stream.on 'data', (data) -> res.write "#{data}"
-  stream.stderr.on 'data', (data) -> res.write "ERROR: #{data}"
-  stream.on 'close', ->
-    closeConnection()
-    setTimeout (-> res.end()), 0
 
 run = (action) -> (req, res) ->
   data = req.body
@@ -84,23 +48,22 @@ run = (action) -> (req, res) ->
   scriptPath = "/#{scriptDir}/#{action}.sh"
 
   if dir
-    withSsh (sess, closeConnection) ->
-      fs.mkdir sess, scriptDir, (err) ->
-        if not err or err.code is 'EEXIST'
-          fs.exists sess, scriptPath, (err, exists) ->
-            if err
-              console.error err
-              closeConnection()
-            else
-              if exists
-                exec sess, scriptPath, pipeTo(res, closeConnection)
-              else
-                console.error "#{scriptPath} does not exist!"
-                closeConnection()
-        else
-          closeConnection()
+    fs.exists scriptPath, (exists) ->
+      if exists
+        execScript res, scriptPath, (result) ->
+          res.end JSON.stringify result
+      else
+        console.error "#{scriptPath} does not exist!"
+        res.status(404).end("#{scriptPath} does not exist!")
   else
     res.status(422).end('Please, provide all required parameters: dir')
+
+
+execScript = (res, scriptPath, cb) ->
+  child_process.exec "bash #{scriptPath}", {}, (err, stdout, stderr) ->
+    console.log err if err
+    cb?(stdout: stdout, stderr: stderr)
+
 
 app.post '/app/install-and-run', (req, res) ->
   data = req.body
@@ -112,15 +75,15 @@ app.post '/app/install-and-run', (req, res) ->
   stopScriptPath = "/#{scriptDir}/stop.sh"
 
   if dir and startScript and stopScript
-    withSsh (sess, closeConnection) ->
-      fs.mkdir sess, scriptDir, (err) ->
-        if not err or err.code is 'EEXIST'
-          writeFile sess, stopScriptPath, stopScript
-          writeFile sess, startScriptPath, augmentWithAgentIP(startScript),  ->
-            exec sess, startScriptPath, pipeTo(res, closeConnection)
-        else
-          console.error "Cannot make script dir #{scriptDir}", err
-          closeConnection()
+    fs.mkdir scriptDir, (err) ->
+      if not err or err.code is 'EEXIST'
+        writeFile stopScriptPath, stopScript
+        writeFile startScriptPath, augmentWithAgentIP(startScript), ->
+          execScript res, startScriptPath, (result) ->
+            res.end JSON.stringify result
+      else
+        console.error "Cannot make script dir #{scriptDir}", err
+        res.status(500).end "An error occured: #{err}"
   else
     res.status(422).end('Please, provide all required parameters: dir, startScript, stopScript')
 
@@ -139,4 +102,4 @@ server = app.listen httpPort, ->
   console.log 'Listening on http://%s:%s', host, port
 
 # initialize the docker event sourcing
-docker_events dockerHost, dockerPort
+docker_events dockerSocket

@@ -22,10 +22,10 @@
     "express": "~4.13.3",
     "forever": "^0.15.1",
     "lodash": "^3.10.1",
-    "request": "^2.67.0",
     "ssh2-connect": "0.0.7",
     "ssh2-fs": "~0.1.5",
     "string-to-stream": "^1.0.1",
-    "underscore": "^1.8.3"
+    "underscore": "^1.8.3",
+    "request": "^2.67.0"
   }
 }

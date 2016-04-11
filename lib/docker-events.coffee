@@ -16,7 +16,7 @@ publishState = (container, instanceName, state, endpoint) ->
       else
         console.log res.statusCode, body
 
-module.exports = (dockerHost, dockerPort) ->
+module.exports = (dockerSocket) ->
 
   handlers =
     start: (container) ->
@@ -28,4 +28,5 @@ module.exports = (dockerHost, dockerPort) ->
       if container.Config?.Labels?['ictu.dashboard.url'] && container.Config?.Labels?['ictu.instance.name']
         publishState container, container.Config.Labels['ictu.instance.name'], container.State.Status, container.Config.Labels['ictu.dashboard.url']
 
-  monitor handlers, {host: dockerHost, port: dockerPort}
+
+  monitor handlers, { socketPath: dockerSocket }
