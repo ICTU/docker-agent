@@ -13,7 +13,8 @@ username       = process.env.USER or 'core'
 privateKeyPath = process.env.PRIVATE_KEY or '~/.ssh/id_rsa'
 ipPrefix       = process.env.IP_PREFIX or '10.25'
 agentIp        = process.env.AGENT_IP
-dockerSocket   = process.env.DOCKER_SOCKET_PATH or '/var/run/docker.sock'
+dockerHost     = process.env.DOCKER_SOCKET_PATH or 'http://10.25.85.10'
+dockerPort     = process.env.DOCKER_SOCKET_PORT or '2375'
 
 sudo = if useSudo then 'sudo ' else ''
 
@@ -36,7 +37,7 @@ else
   ip = _.chain(require('os').networkInterfaces())
       .values()
       .flatten()
-      .find((iface) -> iface.address.indexOf(ipPrefix) is 0 )
+      # .find((iface) -> iface.address.indexOf(ipPrefix) is 0 )
       .value()
       .address
 
@@ -128,10 +129,14 @@ app.post '/app/stop', run('stop')
 
 app.get '/ping', (req, res) -> res.end('pong')
 
+app.get '/version', ->
+  pjson = require './package.json'
+  res.end(pjson.version)
+
 server = app.listen httpPort, ->
   host = server.address().address
   port = server.address().port
   console.log 'Listening on http://%s:%s', host, port
 
 # initialize the docker event sourcing
-docker_events dockerSocket
+docker_events dockerHost, dockerPort
