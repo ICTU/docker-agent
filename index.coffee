@@ -1,15 +1,17 @@
-express       = require 'express'
-bodyParser    = require 'body-parser'
-fs            = require 'fs'
-_             = require 'lodash'
-docker_events = require './lib/docker-events'
-child_process  = require 'child_process'
+express         = require 'express'
+bodyParser      = require 'body-parser'
+fs              = require 'fs'
+_               = require 'lodash'
+docker_events   = require './lib/docker-events'
+child_process   = require 'child_process'
 
-httpPort       = process.env.HTTP_PORT or 80
-baseDir        = process.env.BASE_DIR or '/tmp'
-ipPrefix       = process.env.IP_PREFIX or '10.25'
-agentIp        = process.env.AGENT_IP
-dockerSocket     = process.env.DOCKER_SOCKET_PATH or '/var/run/docker.sock'
+httpPort        = process.env.HTTP_PORT or 80
+baseDir         = process.env.BASE_DIR or '/tmp'
+ipPrefix        = process.env.IP_PREFIX or '10.25'
+agentIp         = process.env.AGENT_IP
+dockerSocket    = process.env.DOCKER_SOCKET_PATH or '/var/run/docker.sock'
+dockerHost      = process.env.DOCKER_HOST
+dockerPort      = process.env.DOCKER_PORT
 
 console.log
   baseDir: baseDir
@@ -26,7 +28,7 @@ else
   ip = _.chain(require('os').networkInterfaces())
       .values()
       .flatten()
-      .find((iface) -> iface.address.indexOf(ipPrefix) is 0 )
+      # .find((iface) -> iface.address.indexOf(ipPrefix) is 0 )
       .value()
       .address
 
@@ -102,4 +104,7 @@ server = app.listen httpPort, ->
   console.log 'Listening on http://%s:%s', host, port
 
 # initialize the docker event sourcing
-docker_events dockerSocket
+if dockerHost && dockerPort
+  docker_events {host: dockerHost, port: dockerPort}
+else
+  docker_events {socketPath: dockerSocket}

@@ -1,16 +1,27 @@
 var Docker = require('dockerode');
 
-module.exports = function (handler, opts) {
-    var docker;
-    if (opts) {
-        if (opts.listContainers) {
-            docker = opts;
-        } else {
-            docker = new Docker(opts);
-        }
-    } else {
-        docker = new Docker({ socketPath: '/var/run/docker.sock' });
-    }
+module.exports = {
+  process_existing_containers: function (handler, opts) {
+    var docker = new Docker(opts);
+
+    var i = 10;
+    console.log("Processing all pre-existing containers");
+    docker.listContainers({all: 1}, function (err, containers) {
+      containers.forEach(function (containerInfo) {
+        docker.getContainer(containerInfo.Id).inspect(function (err, data) {
+          if (err && !data) {
+            console.error("Failed to inspect container: ", err);
+          } else {
+            setTimeout(function() {handler && handler(data);}, i)
+            i = i + 10;
+          }
+        });
+      });
+    });
+  },
+
+  listen: function (handler, opts) {
+    var docker = new Docker(opts);
 
     var trackedEvents = ['create', 'restart', 'start', 'destroy', 'die', 'kill', 'stop', 'oom'];
 
@@ -30,21 +41,22 @@ module.exports = function (handler, opts) {
 
     // start monitoring docker events
     docker.getEvents(function (err, data) {
-        if (err) {
-            return console.log('Error getting docker events: %s', err.message, err);
-        }
+      if (err) {
+        return console.log('Error getting docker events: %s', err.message, err);
+      }
 
-        data.on('data', function (chunk) {
-            var lines = chunk.toString().replace(/\n$/, "").split('\n');
-            lines.forEach(function (line) {
-                try {
-                    if (line) {
-                        processDockerEvent(JSON.parse(line));
-                    }
-                } catch (e){
-                    console.log('Error reading Docker event: %s', e.message, line);
-                }
-            });
+      data.on('data', function (chunk) {
+        var lines = chunk.toString().replace(/\n$/, "").split('\n');
+        lines.forEach(function (line) {
+          try {
+            if (line) {
+              processDockerEvent(JSON.parse(line));
+            }
+          } catch (e){
+            console.log('Error reading Docker event: %s', e.message, line);
+          }
         });
+      });
     });
+  }
 };

@@ -27,12 +27,22 @@ publishContainerInfo = (container) ->
       else
         console.log res.statusCode, body
 
-module.exports = (dockerSocket) ->
+module.exports = (dockerServer) ->
+
+  containerHandler = (container) ->
+    name = container?.Name
+    if container?.Config?.Labels?['ictu/dashboard/url'] && container?.Config?.Labels?['ictu/instance/name']
+      console.log "Processing container '#{name}'"
+      publishContainerInfo container
 
   eventHandler = (event, container, docker) ->
     name = event.Actor?.Attributes?.name or container?.Name or event.id
-    console.log "Received event '#{event.status}' for container '#{name}'"
     if container?.Config?.Labels?['ictu/dashboard/url'] && container?.Config?.Labels?['ictu/instance/name']
+      console.log "Received event '#{event.status}' for container '#{name}'"
       publishContainerInfo container
 
-  monitor eventHandler, { socketPath: dockerSocket }
+  # Process pre-existing containers
+  monitor.process_existing_containers containerHandler, dockerServer
+
+  # Listen for docker events
+  monitor.listen eventHandler, dockerServer
