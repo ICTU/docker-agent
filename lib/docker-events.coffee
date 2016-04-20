@@ -27,17 +27,21 @@ publishContainerInfo = (container) ->
       else
         console.log res.statusCode, body
 
+hasDashboardLabels = (container) ->
+  container?.Config?.Labels?['ictu/dashboard/url'] and
+  container?.Config?.Labels?['ictu/instance/name']
+
 module.exports = (dockerServer) ->
 
   containerHandler = (container) ->
     name = container?.Name
-    if container?.Config?.Labels?['ictu/dashboard/url'] && container?.Config?.Labels?['ictu/instance/name']
+    if hasDashboardLabels container
       console.log "Processing container '#{name}'"
       publishContainerInfo container
 
   eventHandler = (event, container, docker) ->
     name = event.Actor?.Attributes?.name or container?.Name or event.id
-    if container?.Config?.Labels?['ictu/dashboard/url'] && container?.Config?.Labels?['ictu/instance/name']
+    if hasDashboardLabels container
       console.log "Received event '#{event.status}' for container '#{name}'"
       publishContainerInfo container
 
