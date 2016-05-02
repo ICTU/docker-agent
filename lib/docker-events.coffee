@@ -13,26 +13,22 @@ sendRequest = (endpoint, instanceName, payload) ->
         console.log res.statusCode, body
 
 publishContainerInfo = (container) ->
-  instanceName = container.Config.Labels['ictu/instance/name']
-  serviceName = container.Config.Labels['ictu/service/name']
+  instanceName = container.Config.Labels['bigboat/instance/name']
+  serviceName = container.Config.Labels['bigboat/service/name']
   containerName = container.Name
   state = container.State.Status
-  endpoint = container.Config.Labels['ictu/dashboard/url']
-  type = container.Config.Labels['ictu/container/type']
+  endpoint = container.Config.Labels['bigboat/dashboard/url']
+  type = container.Config.Labels['bigboat/container/type']
 
   console.log "Publishing containerInfo to '#{endpoint}' for '#{containerName}'"
   payload = services: {"#{serviceName}": dockerContainerInfo: {}}
   payload.services[serviceName] = {} unless payload.services[serviceName]
-  if type is 'service'
-    payload.services[serviceName].state = state
-  else
-    payload.services[serviceName][type] = state
   payload.services[serviceName].dockerContainerInfo[type] = container
   sendRequest endpoint, instanceName, payload
 
 hasDashboardLabels = (container) ->
-  container?.Config?.Labels?['ictu/dashboard/url'] and
-  container?.Config?.Labels?['ictu/instance/name']
+  container?.Config?.Labels?['bigboat/dashboard/url'] and
+  container?.Config?.Labels?['bigboat/instance/name']
 
 module.exports = (dockerServer) ->
 
