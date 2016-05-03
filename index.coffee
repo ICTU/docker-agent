@@ -7,33 +7,16 @@ child_process   = require 'child_process'
 
 httpPort        = process.env.HTTP_PORT or 80
 baseDir         = process.env.BASE_DIR or '/tmp'
-ipPrefix        = process.env.IP_PREFIX or '10.25'
-agentIp         = process.env.AGENT_IP
 dockerSocket    = process.env.DOCKER_SOCKET_PATH or '/var/run/docker.sock'
 dockerHost      = process.env.DOCKER_HOST
 dockerPort      = process.env.DOCKER_PORT
 
 console.log
   baseDir: baseDir
-  ipPrefix: ipPrefix
-  agentIp: agentIp or 'dynamic'
 
 app = express()
 app.use bodyParser.json()
 app.use bodyParser.urlencoded extended: false
-
-if agentIp
-  ip = agentIp
-else
-  ip = _.chain(require('os').networkInterfaces())
-      .values()
-      .flatten()
-      # .find((iface) -> iface.address.indexOf(ipPrefix) is 0 )
-      .value()
-      .address
-
-augmentWithAgentIP = (script) ->
-  script.replace /_AGENT_IP_/g, ip
 
 writeFile = (scriptPath, script, cb) ->
   fs.writeFile scriptPath, script, (err) ->
@@ -80,7 +63,7 @@ app.post '/app/install-and-run', (req, res) ->
     fs.mkdir scriptDir, (err) ->
       if not err or err.code is 'EEXIST'
         writeFile stopScriptPath, stopScript
-        writeFile startScriptPath, augmentWithAgentIP(startScript), ->
+        writeFile startScriptPath, startScript, ->
           execScript res, startScriptPath, (result) ->
             res.end JSON.stringify result
       else
