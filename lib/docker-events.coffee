@@ -1,9 +1,9 @@
 monitor       = require '../node-docker-monitor'
 request       = require 'request'
 
-sendRequest = (endpoint, instanceName, payload) ->
+sendRequest = (endpoint, payload) ->
   request
-    url: "#{endpoint}/api/v1/state/#{instanceName}"
+    url: endpoint
     method: 'PUT'
     json: payload
     , (err, res, body) ->
@@ -13,22 +13,19 @@ sendRequest = (endpoint, instanceName, payload) ->
         console.log res.statusCode, body
 
 publishContainerInfo = (container) ->
-  instanceName = container.Config.Labels['bigboat/instance/name']
   serviceName = container.Config.Labels['bigboat/service/name']
   containerName = container.Name
-  state = container.State.Status
-  endpoint = container.Config.Labels['bigboat/dashboard/url']
+  updateEndpoint = container.Config.Labels['bigboat/status/url']
   type = container.Config.Labels['bigboat/container/type']
 
-  console.log "Publishing containerInfo to '#{endpoint}' for '#{containerName}'"
+  console.log "Publishing containerInfo to '#{updateEndpoint}' for '#{containerName}'"
   payload = services: {"#{serviceName}": dockerContainerInfo: {}}
   payload.services[serviceName] = {} unless payload.services[serviceName]
   payload.services[serviceName].dockerContainerInfo[type] = container
-  sendRequest endpoint, instanceName, payload
+  sendRequest updateEndpoint, payload
 
 hasDashboardLabels = (container) ->
-  container?.Config?.Labels?['bigboat/dashboard/url'] and
-  container?.Config?.Labels?['bigboat/instance/name']
+  container?.Config?.Labels?['bigboat/status/url']
 
 module.exports = (dockerServer) ->
 
