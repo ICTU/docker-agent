@@ -7,10 +7,7 @@ sendRequest = (endpoint, payload) ->
     method: 'PUT'
     json: payload
     , (err, res, body) ->
-      if err
-        console.error err
-      else
-        console.log res.statusCode, body
+      console.error err if err
 
 publishContainerInfo = (container) ->
   serviceName = container.Config.Labels['bigboat/service/name']
