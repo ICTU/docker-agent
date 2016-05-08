@@ -1,5 +1,17 @@
 monitor       = require '../node-docker-monitor'
 request       = require 'request'
+_             = require 'lodash'
+
+_.mixin deep: (obj, mapper) ->
+  mapper _.mapValues(obj, (v) ->
+    if _.isPlainObject(v) then _.deep(v, mapper) else v
+  )
+
+replaceDotInKeys = (obj) ->
+  _.deep(obj, (x) ->
+    _.mapKeys x, (val, key) ->
+      if key.indexOf(".") > -1 then key.split('.').join('/') else key
+  )
 
 sendRequest = (endpoint, payload) ->
   request
@@ -10,10 +22,12 @@ sendRequest = (endpoint, payload) ->
       console.error err if err
 
 publishContainerInfo = (container) ->
-  serviceName = container.Config.Labels['bigboat/service/name']
+  serviceName = container.Config.Labels['bigboat.service.name']
   containerName = container.Name
-  updateEndpoint = container.Config.Labels['bigboat/status/url']
-  type = container.Config.Labels['bigboat/container/type']
+  updateEndpoint = container.Config.Labels['bigboat.status.url']
+  type = container.Config.Labels['bigboat.container.type']
+
+  container = replaceDotInKeys container
 
   console.log "Publishing containerInfo to '#{updateEndpoint}' for '#{containerName}'"
   payload = services: {"#{serviceName}": dockerContainerInfo: {}}
@@ -22,7 +36,7 @@ publishContainerInfo = (container) ->
   sendRequest updateEndpoint, payload
 
 hasDashboardLabels = (container) ->
-  container?.Config?.Labels?['bigboat/status/url']
+  container?.Config?.Labels?['bigboat.status.url']
 
 module.exports = (dockerServer) ->
 
