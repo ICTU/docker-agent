@@ -22,12 +22,10 @@ sendRequest = (endpoint, payload) ->
       console.error err if err
 
 publishContainerInfo = (container) ->
-  serviceName = container.Config.Labels['bigboat.service.name']
+  serviceName = container.Config.Labels['bigboat/service/name']
   containerName = container.Name
-  updateEndpoint = container.Config.Labels['bigboat.status.url']
-  type = container.Config.Labels['bigboat.container.type']
-
-  container = replaceDotInKeys container
+  updateEndpoint = container.Config.Labels['bigboat/status/url']
+  type = container.Config.Labels['bigboat/container/type']
 
   console.log "Publishing containerInfo to '#{updateEndpoint}' for '#{containerName}'"
   payload = services: {"#{serviceName}": dockerContainerInfo: {}}
@@ -36,17 +34,19 @@ publishContainerInfo = (container) ->
   sendRequest updateEndpoint, payload
 
 hasDashboardLabels = (container) ->
-  container?.Config?.Labels?['bigboat.status.url']
+  container?.Config?.Labels?['bigboat/status/url']
 
 module.exports = (dockerServer) ->
 
   containerHandler = (container) ->
+    container = replaceDotInKeys container
     name = container?.Name
     if hasDashboardLabels container
       console.log "Processing container '#{name}'"
       publishContainerInfo container
 
   eventHandler = (event, container, docker) ->
+    container = replaceDotInKeys container
     name = event.Actor?.Attributes?.name or container?.Name or event.id
     if hasDashboardLabels container
       console.log "Received event '#{event.status}' for container '#{name}'"
