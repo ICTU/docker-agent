@@ -6,10 +6,10 @@ deployment:
   hub:
     tag: /.*/
     commands:
-      - docker build -t ictu/docker-agent:${CIRCLE_TAG} .
-      - MAJOR_VERSION=${CIRCLE_TAG/.*}; docker tag ictu/docker-agent:${CIRCLE_TAG} ictu/docker-agent:${MAJOR_VERSION}
-      - MINOR_VERSION=${CIRCLE_TAG%.*}; docker tag ictu/docker-agent:${CIRCLE_TAG} ictu/docker-agent:${MINOR_VERSION}
+      - docker build -t ictu/dashboard-agent:${CIRCLE_TAG} .
+      - MAJOR_VERSION=${CIRCLE_TAG/.*}; docker tag ictu/dashboard-agent:${CIRCLE_TAG} ictu/dashboard-agent:${MAJOR_VERSION}
+      - MINOR_VERSION=${CIRCLE_TAG%.*}; docker tag ictu/dashboard-agent:${CIRCLE_TAG} ictu/dashboard-agent:${MINOR_VERSION}
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
-      - docker push ictu/docker-agent:${CIRCLE_TAG}
-      - docker push ictu/docker-agent:${MAJOR_VERSION}
-      - docker push ictu/docker-agent:${MAJOR_VERSION}
+      - docker push ictu/dashboard-agent:${CIRCLE_TAG}
+      - docker push ictu/dashboard-agent:${MAJOR_VERSION}
+      - docker push ictu/dashboard-agent:${MAJOR_VERSION}
