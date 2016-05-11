@@ -2,8 +2,8 @@ machine:
   services:
     - docker
   environment:
-    - MAJOR_VERSION=${CIRCLE_TAG/.*}
-    - MINOR_VERSION=${CIRCLE_TAG%.*}
+    MAJOR_VERSION: ${CIRCLE_TAG/.*}
+    MINOR_VERSION: ${CIRCLE_TAG%.*}
 
 dependencies:
   override:
