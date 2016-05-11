@@ -1,12 +1,11 @@
 machine:
   services:
     - docker
-  environment:
-    MAJOR_VERSION: ${CIRCLE_TAG/.*}
-    MINOR_VERSION: ${CIRCLE_TAG%.*}
 
-dependencies:
-  override:
-    - docker build -t ictu/docker-agent:${CIRCLE_TAG} .
-    - docker tag ictu/docker-agent:${CIRCLE_TAG} ictu/docker-agent:${MAJOR_VERSION}
-    - docker tag ictu/docker-agent:${CIRCLE_TAG} ictu/docker-agent:${MINOR_VERSION}
+deployment:
+  hub:
+    tag: /.*/
+    commands:
+      - docker build -t ictu/docker-agent:${CIRCLE_TAG}
+      - MAJOR_VERSION=${CIRCLE_TAG/.*}; docker tag ictu/docker-agent:${CIRCLE_TAG} ictu/docker-agent:${MAJOR_VERSION}
+      - MINOR_VERSION=${CIRCLE_TAG%.*}; docker tag ictu/docker-agent:${CIRCLE_TAG} ictu/docker-agent:${MINOR_VERSION}
