@@ -11,5 +11,5 @@ deployment:
       - MINOR_VERSION=${CIRCLE_TAG%.*}; docker tag ictu/dashboard-agent:${CIRCLE_TAG} ictu/dashboard-agent:${MINOR_VERSION}
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
       - docker push ictu/dashboard-agent:${CIRCLE_TAG}
-      - docker push ictu/dashboard-agent:${MAJOR_VERSION}
+      - docker push ictu/dashboard-agent:${MINOR_VERSION}
       - docker push ictu/dashboard-agent:${MAJOR_VERSION}
