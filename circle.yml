@@ -4,7 +4,7 @@ machine:
 
 deployment:
   hub:
-    tag: /.*/
+    tag: /^[0-9]+\.[0-9]+\.[0-9]+$/
     commands:
       - docker build -t ictu/dashboard-agent:${CIRCLE_TAG} .
       - MAJOR_VERSION=${CIRCLE_TAG/.*}; docker tag ictu/dashboard-agent:${CIRCLE_TAG} ictu/dashboard-agent:${MAJOR_VERSION}
