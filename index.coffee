@@ -1,22 +1,35 @@
 express         = require 'express'
 bodyParser      = require 'body-parser'
+passport        = require 'passport'
+TokenStrategy   = require('passport-token-auth').Strategy
 fs              = require 'fs'
 _               = require 'lodash'
-docker_events   = require './lib/docker-events'
 child_process   = require 'child_process'
+
+docker_events   = require './lib/docker-events'
 
 httpPort        = process.env.HTTP_PORT or 80
 baseDir         = process.env.BASE_DIR or '/tmp'
 dockerSocket    = process.env.DOCKER_SOCKET_PATH or '/var/run/docker.sock'
 dockerHost      = process.env.DOCKER_HOST
 dockerPort      = process.env.DOCKER_PORT
+authToken       = process.env.AUTH_TOKEN
+
+unless authToken
+  console.error "AUTH_TOKEN is required!"
+  process.exit 1
 
 console.log
   baseDir: baseDir
 
+passport.use new TokenStrategy {}, (token, cb) ->
+  cb null, authToken == token
+
 app = express()
+app.use passport.initialize()
 app.use bodyParser.json()
 app.use bodyParser.urlencoded extended: false
+authenticate = passport.authenticate('token', { session: false })
 
 writeFile = (scriptPath, script, cb) ->
   fs.writeFile scriptPath, script, (err) ->
@@ -50,7 +63,7 @@ execScript = (res, scriptPath, cb) ->
     cb?(stdout: stdout, stderr: stderr)
 
 
-app.post '/app/install-and-run', (req, res) ->
+app.post '/app/install-and-run', authenticate, (req, res) ->
   data = req.body
   startScript = data.startScript
   stopScript = data.stopScript
@@ -72,8 +85,8 @@ app.post '/app/install-and-run', (req, res) ->
   else
     res.status(422).end('Please, provide all required parameters: dir, startScript, stopScript')
 
-app.post '/app/start', run('start')
-app.post '/app/stop', run('stop')
+app.post '/app/start', authenticate, run('start')
+app.post '/app/stop', authenticate, run('stop')
 
 app.get '/ping', (req, res) -> res.end('pong')
 
