@@ -1,6 +1,6 @@
 {
   "name": "dashboard-agent",
-  "version": "1.0.1",
+  "version": "4.0.1",
   "description": "A dashboard agent",
   "main": "index.coffee",
   "scripts": {
