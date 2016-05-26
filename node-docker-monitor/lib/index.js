@@ -23,7 +23,7 @@ module.exports = {
   listen: function (handler, opts) {
     var docker = new Docker(opts);
 
-    var trackedEvents = ['create', 'restart', 'start', 'destroy', 'die', 'kill', 'stop', 'oom'];
+    var trackedEvents = ['start', 'die'];
 
     function handleEvent(event, handler) {
       setTimeout(function() {
