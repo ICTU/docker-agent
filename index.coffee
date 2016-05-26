@@ -90,9 +90,7 @@ app.post '/app/stop', authenticate, run('stop')
 
 app.get '/ping', (req, res) -> res.end('pong')
 
-app.get '/version', ->
-  pjson = require './package.json'
-  res.end(pjson.version)
+app.get '/version', (req, res) -> res.end (require './package.json').version
 
 server = app.listen httpPort, ->
   host = server.address().address
