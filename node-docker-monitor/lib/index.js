@@ -23,12 +23,17 @@ module.exports = {
   listen: function (handler, opts) {
     var docker = new Docker(opts);
 
-    var trackedEvents = ['start', 'die'];
+    var trackedEvents = ['start', 'die', 'destroy'];
 
     function handleEvent(event, handler) {
       setTimeout(function() {
         docker.getContainer(event.id).inspect(function (err,data) {
-          handler && handler(event, data, docker);
+          if (err) {
+            console.error("Failed to inspect container: ", err);
+            handler && handler(event, {}, docker);
+          } else {
+            handler && handler(event, data, docker);
+          }
         });
       }, 500);
     }
