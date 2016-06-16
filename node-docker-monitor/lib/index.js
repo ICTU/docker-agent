@@ -20,6 +20,19 @@ module.exports = {
     });
   },
 
+  watch_resources: function (handler, matcher, opts) {
+    var docker = new Docker(opts);
+    docker.listContainers({all: 1}, function (err, containers) {
+      containers.forEach(function (containerInfo) {
+        docker.getContainer(containerInfo.Id).inspect(function (err, data) {
+          if(matcher(data)){
+            console.log("matchees", data);
+          }
+        });
+      });
+    });
+  },
+
   listen: function (handler, opts) {
     var docker = new Docker(opts);
 

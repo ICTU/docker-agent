@@ -57,3 +57,8 @@ module.exports = (dockerServer) ->
 
   # Listen for docker events
   monitor.listen eventHandler, dockerServer
+
+  matcher = (data)->
+    data.Config?.Labels?['bigboat/container/type'] is 'service'
+  setInterval (-> monitor.watch_resources null, matcher, dockerServer), 10000
+  monitor.watch_resources null, matcher, dockerServer
