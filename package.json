@@ -28,6 +28,7 @@
     "ssh2-connect": "0.0.7",
     "ssh2-fs": "~0.1.5",
     "string-to-stream": "^1.0.1",
+    "topsort": "0.0.2",
     "underscore": "^1.8.3"
   }
 }
