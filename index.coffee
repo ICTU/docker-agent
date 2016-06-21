@@ -5,7 +5,7 @@ TokenStrategy   = require('passport-token-auth').Strategy
 fs              = require 'fs'
 _               = require 'lodash'
 child_process   = require 'child_process'
-
+request         = require 'request'
 docker_events   = require './lib/docker-events'
 
 httpPort        = process.env.HTTP_PORT or 80
@@ -90,6 +90,12 @@ app.post '/app/stop', authenticate, run('stop')
 
 app.get '/ping', (req, res) -> res.end('pong')
 
+app.get '/swarm/info', (req, res) ->
+  request.get "http://#{dockerHost}:#{dockerPort}/info", (error, response, body) ->
+    if !error and response.statusCode == 200
+      res.setHeader 'Content-Type', 'application/json'
+      res.end body
+
 app.get '/version', (req, res) -> res.end (require './package.json').version
 
 server = app.listen httpPort, ->
@@ -98,7 +104,7 @@ server = app.listen httpPort, ->
   console.log 'Listening on http://%s:%s', host, port
 
 # initialize the docker event sourcing
-if dockerHost && dockerPort
-  docker_events {host: dockerHost, port: dockerPort}
-else
-  docker_events {socketPath: dockerSocket}
+# if dockerHost && dockerPort
+#   docker_events {host: dockerHost, port: dockerPort}
+# else
+#   docker_events {socketPath: dockerSocket}
