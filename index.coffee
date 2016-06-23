@@ -96,7 +96,8 @@ agent.on 'start', (data) ->
     if not err or err.code is 'EEXIST'
       writeFile stopScriptPath, stopScript
       writeFile startScriptPath, startScript, ->
-        execScript startScriptPath
+        execScript startScriptPath, ->
+          console.log 'Executed', startScriptPath
     else
       console.error "Cannot make script dir #{scriptDir}", err
 
@@ -106,4 +107,5 @@ agent.on 'stop', (data) ->
   projectDir = "#{instance.options.project}-#{instance.name}"
   scriptDir = "#{scriptBaseDir}/#{projectDir}"
   stopScriptPath = "#{scriptDir}/stop.sh"
-  # execScript stopScriptPath
+  execScript stopScriptPath, ->
+    console.log 'Executed', stopScriptPath
