@@ -21,6 +21,7 @@
     "dockerode": "^2.2.7",
     "express": "~4.13.3",
     "forever": "^0.15.1",
+    "handlebars": "^4.0.5",
     "lodash": "^3.10.1",
     "passport": "^0.3.2",
     "passport-token-auth": "^0.1.2",
