@@ -22,7 +22,7 @@ sendRequest = (endpoint, payload) ->
       console.error err if err
 
 publishContainerInfo = (event, container) ->
-  if event
+  if event?.Actor?.Attributes
     serviceName =event.Actor.Attributes['bigboat/service/name']
     containerName =event.Actor.Attributes['name']
     updateEndpoint = event.Actor.Attributes['bigboat/status/url']
@@ -40,10 +40,7 @@ publishContainerInfo = (event, container) ->
   sendRequest updateEndpoint, payload
 
 hasDashboardLabels = (event, container) ->
-  if event
-    event?.Actor?.Attributes?['bigboat/status/url']
-  else
-    container?.Config?.Labels?['bigboat/status/url']
+  event?.Actor?.Attributes?['bigboat/status/url'] or container?.Config?.Labels?['bigboat/status/url']
 
 module.exports = (dockerServer) ->
 
