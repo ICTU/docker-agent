@@ -43,9 +43,11 @@ module.exports.agent = ->
   app.post '/app/start', authenticate, run('start')
   app.post '/app/stop', authenticate, run('stop')
 
-  app.get '/ping', (req, res) -> res.end('pong')
+  sendPong = (req, res) -> res.end('pong')
+  app.get '/ping', sendPong
+  app.get '/auth-ping', authenticate, sendPong
 
-  app.get '/version', (req, res) -> res.end (require './package.json').version
+  app.get '/version', (req, res) -> res.end (require '../package.json').version
 
   server = app.listen httpPort, ->
     host = server.address().address
