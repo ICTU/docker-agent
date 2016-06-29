@@ -48,8 +48,15 @@ toTopsortArray = (doc) ->
     arr = _.union arr, ([service, x] for x in deps)
   arr
 
+resolveParams = (appDef, parameterKey, params)->
+  stringified = JSON.stringify appDef
+  for key, value of params
+    rex = new RegExp "#{parameterKey}#{key}#{parameterKey}", 'g'
+    stringified = stringified.replace rex, value
+  JSON.parse stringified
+
 createContext = (app, instance, bigboat, ctx) ->
-  definition = app.definition
+  definition = resolveParams app.definition, app.parameter_key, instance.parameters
   orderedServices = topsort(toTopsortArray definition).reverse()
   ctx = _.merge {}, initialContext,
     project: instance.options.project
