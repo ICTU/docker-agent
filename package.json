@@ -25,7 +25,7 @@
     "lodash": "^3.10.1",
     "passport": "^0.3.2",
     "passport-token-auth": "^0.1.2",
-    "request": "^2.67.0",
+    "request": "^2.72.0",
     "ssh2-connect": "0.0.7",
     "ssh2-fs": "~0.1.5",
     "string-to-stream": "^1.0.1",
