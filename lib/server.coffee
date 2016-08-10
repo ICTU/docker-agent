@@ -10,7 +10,6 @@ module.exports.agent = ->
   httpPort        = process.env.HTTP_PORT or 80
   dockerSocket    = process.env.DOCKER_SOCKET_PATH or '/var/run/docker.sock'
   dockerHost      = process.env.DOCKER_HOST
-  dockerPort      = process.env.DOCKER_PORT
   authToken       = process.env.AUTH_TOKEN
 
   unless authToken
@@ -55,8 +54,9 @@ module.exports.agent = ->
     console.log 'Listening on http://%s:%s', host, port
 
   # initialize the docker event sourcing
-  if dockerHost && dockerPort
-    docker_events {host: dockerHost, port: dockerPort}
+  if dockerHost
+    parsedDockerHost = dockerHost.split ':'
+    docker_events {host: parsedDockerHost[0], port: parsedDockerHost[1] or 2375}
   else
     docker_events {socketPath: dockerSocket}
 
