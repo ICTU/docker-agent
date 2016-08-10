@@ -74,7 +74,7 @@ createContext = (app, instance, bigboat, ctx) ->
   ctx
 
 writeFile = (scriptPath, script, cb) ->
-  fs.writeFile scriptPath, script, (err) ->
+  fs.writeFile scriptPath, script, {mode: 0o744}, (err) ->
     if err
       console.error err
     else
@@ -82,7 +82,7 @@ writeFile = (scriptPath, script, cb) ->
       cb and cb()
 
 execScript = (scriptPath, cb) ->
-  child_process.exec "bash #{scriptPath}", {}, (err, stdout, stderr) ->
+  child_process.exec scriptPath, {shell: '/bin/bash'}, (err, stdout, stderr) ->
     console.log err if err
     cb?(stdout: stdout, stderr: stderr)
 
