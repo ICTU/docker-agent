@@ -1,10 +1,5 @@
 set -x
 
-if [ "$(whoami)" != "root" ]; then
-	echo "Start script should be executed with root privileges."
-	exit 1
-fi
-
 syslogProto=`echo '{{syslogUrl}}' | grep -oE '(^[a-z]+):' | grep -oE '[a-z]+'`
 syslogHost=`echo '{{syslogUrl}}' | grep -oE '(//.+):' | cut -c3-  | rev | cut -c2- | rev`
 syslogPort=`echo '{{syslogUrl}}' | grep -oE '(:[0-9]+)' | cut -c2-`
