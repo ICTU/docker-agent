@@ -3,9 +3,12 @@ child_process = require 'child_process'
 topsort       = require 'topsort'
 _             = require 'lodash'
 handlebars    = require 'handlebars'
+
 server        = require './lib/server'
 env           = require './lib/env'
 helpers       = require './lib/handlebars-helpers'
+server        = require 'docker-dashboard-agent-api'
+packageJson   = require './package.json'
 
 etcdBaseUrl   = env.assert 'ETCD_BASEURL'
 dataDir       = env.assert 'DATA_DIR'
@@ -29,7 +32,7 @@ handlebars.registerHelper name, f for name, f of helpers initialContext
 startTemplate = handlebars.compile "#{fs.readFileSync './templates/start.hbs'}"
 stopTemplate = handlebars.compile "#{fs.readFileSync './templates/stop.hbs'}"
 
-agent = server.agent()
+agent = server.agent {name: packageJson.name , version: packageJson.version}
 
 getDependencies = (doc, service) ->
   _.without _.union(

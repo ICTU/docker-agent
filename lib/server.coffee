@@ -1,63 +1,45 @@
-express         = require 'express'
-bodyParser      = require 'body-parser'
-passport        = require 'passport'
-TokenStrategy   = require('passport-token-auth').Strategy
-events          = require 'events'
 
-docker_events   = require './docker-events'
+request         = require 'request'
+server          = require 'docker-dashboard-agent-api'
 
-module.exports.agent = ->
-  httpPort        = process.env.HTTP_PORT or 80
-  dockerSocket    = process.env.DOCKER_SOCKET_PATH or '/var/run/docker.sock'
-  dockerHost      = process.env.DOCKER_HOST
-  authToken       = process.env.AUTH_TOKEN
+dockerSocket    = process.env.DOCKER_SOCKET_PATH or '/var/run/docker.sock'
+dockerHost      = process.env.DOCKER_HOST
 
-  unless authToken
-    console.error "AUTH_TOKEN is required!"
-    process.exit 1
+sendRequest = (endpoint, payload) ->
+  console.dir payload
+  request
+    url: endpoint
+    method: 'PUT'
+    json: payload
+    , (err, res, body) ->
+      console.error err if err
 
-  eventEmitter = new events.EventEmitter()
-
-  passport.use new TokenStrategy {}, (token, cb) ->
-    cb null, authToken == token
-
-  app = express()
-  app.use passport.initialize()
-  app.use bodyParser.json()
-  app.use bodyParser.urlencoded extended: false
-  authenticate = passport.authenticate('token', { session: false })
-
-  run = (action) -> (req, res) ->
-    data = req.body
-    eventEmitter.emit action, data
-    res.status(200).end('thanks')
-
-  app.post '/app/install-and-run', authenticate, (req, res) ->
-    data = req.body
-    if data.app and data.instance
-      eventEmitter.emit 'start', data
-      res.status(200).end('thanks')
-    else res.status(422).end 'appInfo not provided'
-
-  app.post '/app/start', authenticate, run('start')
-  app.post '/app/stop', authenticate, run('stop')
-
-  sendPong = (req, res) -> res.end('pong')
-  app.get '/ping', sendPong
-  app.get '/auth-ping', authenticate, sendPong
-
-  app.get '/version', (req, res) -> res.end (require '../package.json').version
-
-  server = app.listen httpPort, ->
-    host = server.address().address
-    port = server.address().port
-    console.log 'Listening on http://%s:%s', host, port
-
-  # initialize the docker event sourcing
-  if dockerHost
-    parsedDockerHost = dockerHost.split ':'
-    docker_events {host: parsedDockerHost[0], port: parsedDockerHost[1] or 2375}
+publishContainerInfo = (event, container) ->
+  if event?.Actor?.Attributes
+    serviceName =event.Actor.Attributes['bigboat/service/name']
+    containerName =event.Actor.Attributes['name']
+    updateEndpoint = event.Actor.Attributes['bigboat/status/url']
+    type = event.Actor.Attributes['bigboat/container/type']
   else
-    docker_events {socketPath: dockerSocket}
+    serviceName = container.Config.Labels['bigboat/service/name']
+    containerName = container.Name
+    updateEndpoint = container.Config.Labels['bigboat/status/url']
+    type = container.Config.Labels['bigboat/container/type']
 
-  eventEmitter
+  console.log "Publishing containerInfo to '#{updateEndpoint}' for '#{containerName}'"
+  payload = services: {"#{serviceName}": dockerContainerInfo: {}}
+  payload.services[serviceName] = {} unless payload.services[serviceName]
+  payload.services[serviceName].dockerContainerInfo[type] = container
+  sendRequest updateEndpoint, payload
+
+
+
+# initialize the docker event sourcing
+dockerConfig = if dockerHost
+  parsedDockerHost = dockerHost.split ':'
+  host: parsedDockerHost[0], port: parsedDockerHost[1] or 2375
+else
+  socketPath: dockerSocket
+
+server.docker.processExistingContainers dockerConfig, publishContainerInfo
+server.docker.listen dockerConfig, publishContainerInfo
