@@ -1,110 +1,121 @@
-express         = require 'express'
-bodyParser      = require 'body-parser'
-passport        = require 'passport'
-TokenStrategy   = require('passport-token-auth').Strategy
-fs              = require 'fs'
-_               = require 'lodash'
-child_process   = require 'child_process'
-request         = require 'request'
-docker_events   = require './lib/docker-events'
+fs            = require 'fs'
+child_process = require 'child_process'
+topsort       = require 'topsort'
+_             = require 'lodash'
+handlebars    = require 'handlebars'
 
-httpPort        = process.env.HTTP_PORT or 80
-baseDir         = process.env.BASE_DIR or '/tmp'
-dockerSocket    = process.env.DOCKER_SOCKET_PATH or '/var/run/docker.sock'
-dockerHost      = process.env.DOCKER_HOST
-dockerPort      = process.env.DOCKER_PORT
-authToken       = process.env.AUTH_TOKEN
+server        = require './lib/server'
+env           = require './lib/env'
+helpers       = require './lib/handlebars-helpers'
+server        = require 'docker-dashboard-agent-api'
+packageJson   = require './package.json'
 
-unless authToken
-  console.error "AUTH_TOKEN is required!"
-  process.exit 1
+etcdBaseUrl   = env.assert 'ETCD_BASEURL'
+dataDir       = env.assert 'DATA_DIR'
+sharedDataDir = env.assert 'SHARED_DATA_DIR'
+rootUrl       = env.assert 'ROOT_URL'
+targetVlan    = env.assert 'TARGET_VLAN'
+syslogUrl     = env.assert 'SYSLOG_URL'
+scriptBaseDir = env.assert 'SCRIPT_BASE_DIR'
 
-console.log
-  baseDir: baseDir
+initialContext =
+  etcdCluster: etcdBaseUrl
+  dataDir: dataDir
+  sharedDataDir: sharedDataDir
+  agentUrl: rootUrl
+  targetVlan: targetVlan
+  syslogUrl: syslogUrl
 
-passport.use new TokenStrategy {}, (token, cb) ->
-  cb null, authToken == token
+console.log 'Agent InitialContext', initialContext
 
-app = express()
-app.use passport.initialize()
-app.use bodyParser.json()
-app.use bodyParser.urlencoded extended: false
-authenticate = passport.authenticate('token', { session: false })
+handlebars.registerHelper name, f for name, f of helpers initialContext
+startTemplate = handlebars.compile "#{fs.readFileSync './templates/start.hbs'}"
+stopTemplate = handlebars.compile "#{fs.readFileSync './templates/stop.hbs'}"
+
+agent = server.agent {name: packageJson.name , version: packageJson.version}
+
+getDependencies = (doc, service) ->
+  _.without _.union(
+      doc[service]?.links,
+      doc[service]?['volumes-from'],
+      doc[service]?['volumes_from'],
+      doc[service]?['depends_on'],
+      [service]
+    )
+  , undefined
+
+toTopsortArray = (doc) ->
+  arr = []
+  for service in Object.keys doc when service not in ['name', 'version', 'pic', 'description']
+    deps = getDependencies doc, service
+    arr = _.union arr, ([service, x] for x in deps)
+  arr
+
+resolveParams = (appDef, parameterKey, params)->
+  stringified = JSON.stringify appDef
+  for key, value of params
+    rex = new RegExp "#{parameterKey}#{key}#{parameterKey}", 'g'
+    stringified = stringified.replace rex, value
+  JSON.parse stringified
+
+createContext = (app, instance, bigboat, ctx) ->
+  definition = resolveParams app.definition, app.parameter_key, instance.parameters
+  orderedServices = topsort(toTopsortArray definition).reverse()
+  ctx = _.merge {}, initialContext,
+    project: instance.options.project
+    instance: instance.name
+    vlan: instance.options?.targetVlan or targetVlan
+    dashboardUrl: bigboat.url
+    appName: app.name
+    appVersion: app.version
+    services: []
+    total: orderedServices.length
+  for service, i in orderedServices
+    definition[service].num = i+1
+    definition[service].service = service
+    ctx.services.push definition[service]
+  ctx
 
 writeFile = (scriptPath, script, cb) ->
-  fs.writeFile scriptPath, script, (err) ->
+  fs.writeFile scriptPath, script, {mode: 0o744}, (err) ->
     if err
       console.error err
     else
       console.log "Created file #{scriptPath}" if not err
       cb and cb()
 
-run = (action) -> (req, res) ->
-  data = req.body
-  dir = data.dir
-  scriptDir = "/#{baseDir}/#{dir}"
-  scriptPath = "/#{scriptDir}/#{action}.sh"
-
-  if dir
-    fs.exists scriptPath, (exists) ->
-      if exists
-        execScript res, scriptPath, (result) ->
-          res.end JSON.stringify result
-      else
-        console.error "#{scriptPath} does not exist!"
-        res.status(404).end("#{scriptPath} does not exist!")
-  else
-    res.status(422).end('Please, provide all required parameters: dir')
-
-
-execScript = (res, scriptPath, cb) ->
-  child_process.exec "bash #{scriptPath}", {}, (err, stdout, stderr) ->
+execScript = (scriptPath, cb) ->
+  child_process.exec scriptPath, {shell: '/bin/bash'}, (err, stdout, stderr) ->
     console.log err if err
     cb?(stdout: stdout, stderr: stderr)
 
+agent.on 'start', (data) ->
+  app = data.app
+  instance = data.instance
+  bigboat = data.bigboat
+  ctx = createContext app, instance, bigboat, initialContext
+  startScript = startTemplate ctx
+  stopScript = stopTemplate ctx
 
-app.post '/app/install-and-run', authenticate, (req, res) ->
-  data = req.body
-  startScript = data.startScript
-  stopScript = data.stopScript
-  dir = data.dir
-  scriptDir = "/#{baseDir}/#{dir}"
-  startScriptPath = "/#{scriptDir}/start.sh"
-  stopScriptPath = "/#{scriptDir}/stop.sh"
+  projectDir = "#{instance.options.project}-#{instance.name}"
+  scriptDir = "#{scriptBaseDir}/#{projectDir}"
+  startScriptPath = "#{scriptDir}/start.sh"
+  stopScriptPath = "#{scriptDir}/stop.sh"
 
-  if dir and startScript and stopScript
-    fs.mkdir scriptDir, (err) ->
-      if not err or err.code is 'EEXIST'
-        writeFile stopScriptPath, stopScript
-        writeFile startScriptPath, startScript, ->
-          execScript res, startScriptPath, (result) ->
-            res.end JSON.stringify result
-      else
-        console.error "Cannot make script dir #{scriptDir}", err
-        res.status(500).end "An error occured: #{err}"
-  else
-    res.status(422).end('Please, provide all required parameters: dir, startScript, stopScript')
+  fs.mkdir scriptDir, (err) ->
+    if not err or err.code is 'EEXIST'
+      writeFile stopScriptPath, stopScript
+      writeFile startScriptPath, startScript, ->
+        execScript startScriptPath, ->
+          console.log 'Executed', startScriptPath
+    else
+      console.error "Cannot make script dir #{scriptDir}", err
 
-app.post '/app/start', authenticate, run('start')
-app.post '/app/stop', authenticate, run('stop')
-
-app.get '/ping', (req, res) -> res.end('pong')
-
-app.get '/swarm/info', (req, res) ->
-  request.get "http://#{dockerHost}:#{dockerPort}/info", (error, response, body) ->
-    if !error and response.statusCode == 200
-      res.setHeader 'Content-Type', 'application/json'
-      res.end body
-
-app.get '/version', (req, res) -> res.end (require './package.json').version
-
-server = app.listen httpPort, ->
-  host = server.address().address
-  port = server.address().port
-  console.log 'Listening on http://%s:%s', host, port
-
-# initialize the docker event sourcing
-# if dockerHost && dockerPort
-#   docker_events {host: dockerHost, port: dockerPort}
-# else
-#   docker_events {socketPath: dockerSocket}
+agent.on 'stop', (data) ->
+  console.log 'stopApp', data
+  instance = data.instance
+  projectDir = "#{instance.options.project}-#{instance.name}"
+  scriptDir = "#{scriptBaseDir}/#{projectDir}"
+  stopScriptPath = "#{scriptDir}/stop.sh"
+  execScript stopScriptPath, ->
+    console.log 'Executed', stopScriptPath

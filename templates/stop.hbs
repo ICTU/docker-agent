@@ -1,0 +1,58 @@
+PROJECT="{{project}}"
+APPNAME="{{appName}}"
+INSTANCE="{{instance}}"
+TOTAL_STEPS=$((({{total}}*2)+1))
+STEP=0
+
+DASHBOARD_URL={{dashboardUrl}}/api/v1/state/$INSTANCE
+
+curl -XPUT -sS $DASHBOARD_URL -H "Content-Type: application/json" -d "{ \
+	\"meta\": { \
+		\"state\": \"stopping\", \
+		\"totalSteps\": \"$TOTAL_STEPS\", \
+		\"progress\": \"$STEP\" \
+	} \
+}"
+
+{{#eachReverse services}}
+  DOCKERNAME="{{service}}-$PROJECT-$INSTANCE"
+  DOCKERNETNAME="net-$DOCKERNAME"
+  DOCKERSSHDNAME="sshd-$DOCKERNAME"
+
+  myip=$(docker exec $DOCKERNETNAME ifconfig eth1 | grep "inet addr:" | awk '{print $2}' | awk -F: '{print $2}')
+  curl -XPUT -sS $DASHBOARD_URL -H "Content-Type: application/json" -d "{ \
+  	\"meta\": { \
+  		\"stateDescription\": \"Stopping network for {{service}}\" \
+  	} \
+  }"
+
+  STEP=$((STEP+1))
+  curl -XPUT -sS $DASHBOARD_URL -H "Content-Type: application/json" -d "{ \
+    \"meta\": { \
+      \"progress\": \"$STEP\" \
+    } \
+  }"
+
+  docker stop -t 5 $DOCKERNETNAME
+  docker rm $DOCKERNETNAME
+
+  curl -XPUT -sS $DASHBOARD_URL -H "Content-Type: application/json" -d "{ \
+    \"meta\": { \
+      \"stateDescription\": \"Stopping service {{service}}\", \
+      \"progress\": \"$STEP\" \
+    } \
+  }"
+  STEP=$((STEP+1))
+  curl -XPUT -sS $DASHBOARD_URL -H "Content-Type: application/json" -d "{ \
+    \"meta\": { \
+      \"progress\": \"$STEP\" \
+    } \
+  }"
+  docker stop -t 10 $DOCKERSSHDNAME
+  docker rm $DOCKERSSHDNAME
+  docker stop -t 30 $DOCKERNAME
+  docker rm $DOCKERNAME
+
+{{/eachReverse}}
+
+curl -XDELETE -sS $DASHBOARD_URL
