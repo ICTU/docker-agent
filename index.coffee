@@ -14,6 +14,7 @@ etcdBaseUrl   = env.assert 'ETCD_BASEURL'
 dataDir       = env.assert 'DATA_DIR'
 sharedDataDir = env.assert 'SHARED_DATA_DIR'
 rootUrl       = env.assert 'ROOT_URL'
+targetNIC     = env.asset 'TARGET_NIC'
 targetVlan    = env.assert 'TARGET_VLAN'
 syslogUrl     = env.assert 'SYSLOG_URL'
 scriptBaseDir = env.assert 'SCRIPT_BASE_DIR'
@@ -24,6 +25,7 @@ initialContext =
   sharedDataDir: sharedDataDir
   agentUrl: rootUrl
   targetVlan: targetVlan
+  targetNIC: targetNIC
   syslogUrl: syslogUrl
 
 console.log 'Agent InitialContext', initialContext
@@ -65,6 +67,7 @@ createContext = (app, instance, bigboat, ctx) ->
     project: instance.options.project
     instance: instance.name
     vlan: instance.options?.targetVlan or targetVlan
+    nic: targetNIC
     dashboardUrl: bigboat.url
     appName: app.name
     appVersion: app.version
