@@ -122,7 +122,7 @@ docker run \
 --label bigboat/service/name={{service}} \
 --label bigboat/container/type=net \
 {{{attribute "extra_hosts" "--add-host="}}} \
--e pipework_cmd="{{nic}} -i eth0 @CONTAINER_NAME@ dhclient" \
+-e pipework_cmd="{{targetNIC}} -i eth0 @CONTAINER_NAME@ dhclient" \
 -d ictu/pipes
 
 while [ 1 ]; do
