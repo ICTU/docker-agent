@@ -1,8 +1,8 @@
 
 request         = require 'request'
 server          = require 'docker-dashboard-agent-api'
+url             = require 'url'
 
-dockerSocket    = process.env.DOCKER_SOCKET_PATH or '/var/run/docker.sock'
 dockerHost      = process.env.DOCKER_HOST
 
 sendRequest = (endpoint, payload) ->
@@ -32,14 +32,21 @@ publishContainerInfo = (event, container) ->
   payload.services[serviceName].dockerContainerInfo[type] = container
   sendRequest updateEndpoint, payload
 
+dockerUrl = url.parse dockerHost
 
+console.log dockerUrl
 
-# initialize the docker event sourcing
-dockerConfig = if dockerHost
-  parsedDockerHost = dockerHost.split ':'
-  host: parsedDockerHost[0], port: parsedDockerHost[1] or 2375
+dockerConfig = if dockerUrl.host is '' and dockerUrl.path
+  socketPath: dockerUrl.path
 else
-  socketPath: dockerSocket
+  host: dockerUrl.hostname
+  port: dockerUrl.port
+
+if not dockerConfig.socketPath and (not dockerConfig.host or not dockerConfig.port)
+  console.error 'DOCKER_HOST env not properly configured, i got', dockerConfig
+  process.exit(1)
+
+console.log 'dockerConfig', dockerConfig
 
 server.docker.processExistingContainers dockerConfig, publishContainerInfo
 server.docker.listen dockerConfig, publishContainerInfo
