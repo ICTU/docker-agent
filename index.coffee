@@ -67,7 +67,7 @@ createContext = (app, instance, bigboat, ctx) ->
     project: instance.options.project
     instance: instance.name
     vlan: instance.options?.targetVlan or targetVlan
-    nic: targetNIC
+    nic: targetNIC or 'ens160'
     dashboardUrl: bigboat.url
     appName: app.name
     appVersion: app.version
