@@ -61,6 +61,8 @@ module.exports = (ctx) ->
 
   stringify: JSON.stringify
 
+  targetNIC: -> ctx.targetNIC
+
   dashboardUrl: (data)->
     root = data.data.root
     root.dashboardUrl

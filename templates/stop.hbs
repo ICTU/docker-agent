@@ -1,10 +1,20 @@
+if [ "$(whoami)" != "root" ]; then
+  echo "Stop script should be executed with root privileges."
+  exit 1
+fi
+
+#
+# GENERAL STATE CLEANUP AND CONFIGURATION+
+#
+
+# Root data directory is {{dataDir}}
 PROJECT="{{project}}"
 APPNAME="{{appName}}"
 INSTANCE="{{instance}}"
+DASHBOARD_URL={{dashboardUrl}}/api/v1/state/$INSTANCE
+
 TOTAL_STEPS=$((({{total}}*2)+1))
 STEP=0
-
-DASHBOARD_URL={{dashboardUrl}}/api/v1/state/$INSTANCE
 
 curl -XPUT -sS $DASHBOARD_URL -H "Content-Type: application/json" -d "{ \
 	\"meta\": { \
@@ -14,26 +24,10 @@ curl -XPUT -sS $DASHBOARD_URL -H "Content-Type: application/json" -d "{ \
 	} \
 }"
 
-{{#eachReverse services}}
+{{#each reverse services}}
   DOCKERNAME="{{service}}-$PROJECT-$INSTANCE"
   DOCKERNETNAME="net-$DOCKERNAME"
   DOCKERSSHDNAME="sshd-$DOCKERNAME"
-
-  curl -XPUT -sS $DASHBOARD_URL -H "Content-Type: application/json" -d "{ \
-  	\"meta\": { \
-  		\"stateDescription\": \"Stopping network for {{service}}\" \
-  	} \
-  }"
-
-  STEP=$((STEP+1))
-  curl -XPUT -sS $DASHBOARD_URL -H "Content-Type: application/json" -d "{ \
-    \"meta\": { \
-      \"progress\": \"$STEP\" \
-    } \
-  }"
-
-  docker stop -t 5 $DOCKERNETNAME
-  docker rm $DOCKERNETNAME
 
   curl -XPUT -sS $DASHBOARD_URL -H "Content-Type: application/json" -d "{ \
     \"meta\": { \
@@ -47,11 +41,14 @@ curl -XPUT -sS $DASHBOARD_URL -H "Content-Type: application/json" -d "{ \
       \"progress\": \"$STEP\" \
     } \
   }"
-  docker stop -t 10 $DOCKERSSHDNAME
-  docker rm $DOCKERSSHDNAME
-  docker stop -t 30 $DOCKERNAME
-  docker rm $DOCKERNAME
 
-{{/eachReverse}}
+  docker stop $DOCKERNETNAME
+  docker rm -v $DOCKERNETNAME
+  docker stop -t 10 $DOCKERSSHDNAME
+  docker rm -v $DOCKERSSHDNAME
+  docker stop -t 30 $DOCKERNAME
+  docker rm -v $DOCKERNAME
+
+{{/each}}
 
 curl -XDELETE -sS $DASHBOARD_URL
