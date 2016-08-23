@@ -3,7 +3,7 @@ child_process = require 'child_process'
 topsort       = require 'topsort'
 _             = require 'lodash'
 handlebars    = require 'handlebars'
-fs            = require 'fs'
+fs            = require 'fs-extra'
 path          = require 'path'
 
 server        = require './lib/server'
@@ -124,7 +124,11 @@ agent.on 'stop', (data) ->
     console.log 'Executed', stopScriptPath
 
 
-agent.on '/storage/list', (data, callback) ->
+agent.on '/storage/list', (params, data, callback) ->
   srcpath = path.join dataDir, domain
   callback null, fs.readdirSync(srcpath).filter (file) ->
     fs.statSync(path.join(srcpath, file)).isDirectory()
+
+agent.on '/storage/delete', ({name}, data, callback) ->
+  srcpath = path.join dataDir, domain, name
+  fs.remove srcpath, callback
