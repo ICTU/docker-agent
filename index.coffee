@@ -133,6 +133,10 @@ agent.on '/storage/delete', ({name}, data, callback) ->
   srcpath = path.join dataDir, domain, name
   fs.remove srcpath, callback
 
-agent.on '/storage/create', (params, {name}, callback) ->
+agent.on '/storage/create', (params, {name, source}, callback) ->
   targetpath = path.join dataDir, domain, name
-  fs.mkdirs targetpath, callback
+  if source
+    srcpath = path.join dataDir, domain, source
+    fs.copy srcpath, targetpath, callback
+  else
+    fs.mkdirs targetpath, callback
