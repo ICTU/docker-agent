@@ -16,7 +16,7 @@
   "repository": "git@www.gitlab.innovation.ictu:cluster/dashboard-agent.git",
   "dependencies": {
     "coffee-script": "~1.10.0",
-    "docker-dashboard-agent-api": "^4.2.2",
+    "docker-dashboard-agent-api": "^4.3.2",
     "forever": "^0.15.1",
     "fs-extra": "^0.30.0",
     "handlebars": "^4.0.5",
