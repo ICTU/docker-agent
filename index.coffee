@@ -3,6 +3,8 @@ child_process = require 'child_process'
 topsort       = require 'topsort'
 _             = require 'lodash'
 handlebars    = require 'handlebars'
+fs            = require 'fs'
+path          = require 'path'
 
 server        = require './lib/server'
 env           = require './lib/env'
@@ -17,6 +19,7 @@ rootUrl       = env.assert 'ROOT_URL'
 targetVlan    = env.assert 'TARGET_VLAN'
 syslogUrl     = env.assert 'SYSLOG_URL'
 scriptBaseDir = env.assert 'SCRIPT_BASE_DIR'
+domain        = env.assert 'DOMAIN'
 
 initialContext =
   etcdCluster: etcdBaseUrl
@@ -119,3 +122,9 @@ agent.on 'stop', (data) ->
   stopScriptPath = "#{scriptDir}/stop.sh"
   execScript stopScriptPath, ->
     console.log 'Executed', stopScriptPath
+
+
+agent.on '/storage/list', (data, callback) ->
+  srcpath = path.join dataDir, domain
+  callback null, fs.readdirSync(srcpath).filter (file) ->
+    fs.statSync(path.join(srcpath, file)).isDirectory()
