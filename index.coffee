@@ -132,3 +132,7 @@ agent.on '/storage/list', (params, data, callback) ->
 agent.on '/storage/delete', ({name}, data, callback) ->
   srcpath = path.join dataDir, domain, name
   fs.remove srcpath, callback
+
+agent.on '/storage/create', (params, {name}, callback) ->
+  targetpath = path.join dataDir, domain, name
+  fs.mkdirs targetpath, callback
