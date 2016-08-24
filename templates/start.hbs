@@ -97,9 +97,8 @@ docker rm $DOCKERSSHDNAME 2>/dev/null
 #
 # Prepare the volumes
 #
-{{#each volumes}}
-mkdir -m 777 -p {{../../dataDir}}/{{../../project}}/{{../../instance}}/{{../service}}{{this}}
-{{/each}}
+{{{createVolumes}}}
+
 #
 # Prepare the network
 #

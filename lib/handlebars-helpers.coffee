@@ -1,23 +1,50 @@
+reduceVolumes = (root, volumes, cb) ->
+  volumes?.reduce (prev, volume) =>
+    parsed = volume.match /^((\/[^:]+)|(\/[^:]+):(\/[^:]+))(:ro|:rw)?(:shared|:do_not_persist)?$/
+    if parsed
+      cb prev, root, volumes, parsed
+    else
+      console.error "Invalid volume mapping: #{volume}"
+      prev
+  , ""
+
 module.exports = (ctx) ->
   literal: (content) -> content
-  dockervolumes: (data)->
-    root = data.data.root
-    @volumes?.reduce (prev, volume) =>
-      parsed = volume.match /^((\/[^:]+)|(\/[^:]+):(\/[^:]+))(:ro|:rw)?(:shared|:do_not_persist)?$/
-      if parsed
-        [all, ignore, simplePath, mappedPathExt, mappedPathInt, permissions, options] = parsed
-        mapping = "#{root.dataDir}/#{root.project}/#{root.instance}/#{@service}#{simplePath}:#{simplePath}"
-        if mappedPathExt
-          if options is ':shared'
-            mapping = "#{root.sharedDataDir}/#{root.project}#{mappedPathExt}:#{mappedPathInt}"
+  createVolumes: (data) ->
+    reduceVolumes data.data.root, @volumes, (prev, root, volumes, parsed) =>
+      [all, ignore, simplePath, mappedPathExt, mappedPathInt, permissions, options] = parsed
+      if root.storageBucket and options isnt ':do_not_persist'
+        basePath = if options is ':shared'
+            "#{root.sharedDataDir}/#{root.project}"
           else
-            mapping = "#{root.dataDir}/#{root.project}/#{root.instance}/#{@service}#{mappedPathExt}:#{mappedPathInt}"
-        if options is ':do_not_persist' then mapping = simplePath or mappedPathInt
+            "#{root.dataDir}/#{root.project}/#{root.storageBucket}"
+        dir = if mappedPathExt
+             "#{basePath}/#{@service}#{mappedPathExt}"
+          else
+            "#{basePath}/#{@service}#{simplePath}"
+        """#{prev}
+        mkdir -m 777 -p #{dir}
+        """
+      else
+        """#{prev}
+        """
+
+  dockervolumes: (data) ->
+    reduceVolumes data.data.root, @volumes, (prev, root, volumes, parsed) =>
+      [all, ignore, simplePath, mappedPathExt, mappedPathInt, permissions, options] = parsed
+      if root.storageBucket and options isnt ':do_not_persist'
+        basePath = if options is ':shared'
+            "#{root.sharedDataDir}/#{root.project}"
+          else
+            "#{root.dataDir}/#{root.project}/#{root.storageBucket}"
+        mapping = if mappedPathExt
+             "#{basePath}/#{@service}#{mappedPathExt}:#{mappedPathInt}"
+          else
+            "#{basePath}/#{@service}#{simplePath}"
         "#{prev}-v #{mapping}#{permissions or ''} "
       else
-        console.error "Invalid volume mapping: #{volume}"
-        prev
-    , ""
+        "#{prev}-v #{simplePath or mappedPathInt}#{permissions or ''} "
+
 
   volumesfrom: (data) ->
     root = data.data.root

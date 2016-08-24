@@ -67,6 +67,7 @@ createContext = (app, instance, bigboat, ctx) ->
   ctx = _.merge {}, initialContext,
     project: instance.options.project
     instance: instance.name
+    storageBucket: instance.options?.storageBucket
     vlan: instance.options?.targetVlan or targetVlan
     dashboardUrl: bigboat.url
     appName: app.name
