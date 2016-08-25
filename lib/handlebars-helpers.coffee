@@ -8,39 +8,39 @@ reduceVolumes = (root, volumes, cb) ->
       prev
   , ""
 
+computeExternalPath = (context, parsedPath, service) ->
+  [all, ignore, simplePath, mappedPathExt, mappedPathInt, permissions, options] = parsedPath
+  if context.storageBucket and options isnt ':do_not_persist'
+    basePath = "#{context.dataDir}/#{context.project}/#{context.storageBucket}"
+    basePath +=  "/__SHARED__" if options is ':shared'
+    if mappedPathExt
+       "#{basePath}#{mappedPathExt}"
+    else
+      "#{basePath}/#{service}#{simplePath}"
+  else
+    ''
+
 module.exports = (ctx) ->
   literal: (content) -> content
   createVolumes: (data) ->
     reduceVolumes data.data.root, @volumes, (prev, root, volumes, parsed) =>
-      [all, ignore, simplePath, mappedPathExt, mappedPathInt, permissions, options] = parsed
-      if root.storageBucket and options isnt ':do_not_persist'
-        basePath = if options is ':shared'
-            "#{root.sharedDataDir}/#{root.project}"
-          else
-            "#{root.dataDir}/#{root.project}/#{root.storageBucket}"
-        dir = if mappedPathExt
-             "#{basePath}/#{@service}#{mappedPathExt}"
-          else
-            "#{basePath}/#{@service}#{simplePath}"
+      dir = computeExternalPath root, parsed, @service
+      if dir
         """#{prev}
         mkdir -m 777 -p #{dir}
         """
       else
-        """#{prev}
-        """
+        prev
 
   dockervolumes: (data) ->
     reduceVolumes data.data.root, @volumes, (prev, root, volumes, parsed) =>
       [all, ignore, simplePath, mappedPathExt, mappedPathInt, permissions, options] = parsed
-      if root.storageBucket and options isnt ':do_not_persist'
-        basePath = if options is ':shared'
-            "#{root.sharedDataDir}/#{root.project}"
-          else
-            "#{root.dataDir}/#{root.project}/#{root.storageBucket}"
+      extDir = computeExternalPath root, parsed, @service
+      if extDir
         mapping = if mappedPathExt
-             "#{basePath}/#{@service}#{mappedPathExt}:#{mappedPathInt}"
+             "#{extDir}:#{mappedPathInt}"
           else
-            "#{basePath}/#{@service}#{simplePath}"
+            "#{extDir}:#{simplePath}"
         "#{prev}-v #{mapping}#{permissions or ''} "
       else
         "#{prev}-v #{simplePath or mappedPathInt}#{permissions or ''} "
