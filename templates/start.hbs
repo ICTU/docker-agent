@@ -167,7 +167,7 @@ docker run -d \
 {{#if user}}-u {{user}}{{/if}} \
 {{#if mem_limit}}-m {{mem_limit}}{{/if}} \
 {{{environmentAttributes}}} \
--v /etc/localtime:/etc/localtime:ro {{image}} {{#if command}}{{command}}{{/if}} > /dev/null
+-v /etc/localtime:/etc/localtime:ro {{image}} {{#if command}}{{{command}}}{{/if}} > /dev/null
 
 {{#if enable_ssh}}
 #
