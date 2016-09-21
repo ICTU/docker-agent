@@ -66,7 +66,6 @@ module.exports = (ctx) ->
 
 
   mapDocker: (context) ->
-    console.log 'mapDocker', @, context
     if context.mapDocker or context.map_docker
       context.fn(this)
     else context.inverse(this)

@@ -1,16 +1,13 @@
-fs            = require 'fs'
 child_process = require 'child_process'
-topsort       = require 'topsort'
 _             = require 'lodash'
-handlebars    = require 'handlebars'
 fs            = require 'fs-extra'
 path          = require 'path'
 
 server        = require './lib/server'
 env           = require './lib/env'
-helpers       = require './lib/handlebars-helpers'
 server        = require 'docker-dashboard-agent-api'
 packageJson   = require './package.json'
+scripts       = require './lib/scripts'
 
 etcdBaseUrl   = env.assert 'ETCD_BASEURL'
 dataDir       = env.assert 'DATA_DIR'
@@ -31,54 +28,7 @@ initialContext =
 
 console.log 'Agent InitialContext', initialContext
 
-handlebars.registerHelper name, f for name, f of helpers initialContext
-startTemplate = handlebars.compile "#{fs.readFileSync './templates/start.hbs'}"
-stopTemplate = handlebars.compile "#{fs.readFileSync './templates/stop.hbs'}"
-
 agent = server.agent {name: packageJson.name , version: packageJson.version}
-
-getDependencies = (doc, service) ->
-  _.without _.union(
-      doc[service]?.links,
-      doc[service]?['volumes-from'],
-      doc[service]?['volumes_from'],
-      doc[service]?['depends_on'],
-      [service]
-    )
-  , undefined
-
-toTopsortArray = (doc) ->
-  arr = []
-  for service in Object.keys doc when service not in ['name', 'version', 'pic', 'description']
-    deps = getDependencies doc, service
-    arr = _.union arr, ([service, x] for x in deps)
-  arr
-
-resolveParams = (appDef, parameterKey, params)->
-  stringified = JSON.stringify appDef
-  for key, value of params
-    rex = new RegExp "#{parameterKey}#{key}#{parameterKey}", 'g'
-    stringified = stringified.replace rex, value
-  JSON.parse stringified
-
-createContext = (app, instance, bigboat, ctx) ->
-  definition = resolveParams app.definition, app.parameter_key, instance.parameters
-  orderedServices = topsort(toTopsortArray definition).reverse()
-  ctx = _.merge {}, initialContext,
-    project: instance.options.project
-    instance: instance.name
-    storageBucket: instance.options?.storageBucket
-    vlan: instance.options?.targetVlan or targetVlan
-    dashboardUrl: bigboat.url
-    appName: app.name
-    appVersion: app.version
-    services: []
-    total: orderedServices.length
-  for service, i in orderedServices
-    definition[service].num = i+1
-    definition[service].service = service
-    ctx.services.push definition[service]
-  ctx
 
 writeFile = (scriptPath, script, cb) ->
   fs.writeFile scriptPath, script, {mode: 0o744}, (err) ->
@@ -90,18 +40,14 @@ writeFile = (scriptPath, script, cb) ->
 
 execScript = (scriptPath, cb) ->
   child_process.exec scriptPath, {shell: '/bin/bash'}, (err, stdout, stderr) ->
-    console.log err if err
+    console.error err if err
     cb?(stdout: stdout, stderr: stderr)
 
 agent.on 'start', (data) ->
-  app = data.app
-  instance = data.instance
-  bigboat = data.bigboat
-  ctx = createContext app, instance, bigboat, initialContext
-  startScript = startTemplate ctx
-  stopScript = stopTemplate ctx
+  startScript = scripts.start data, initialContext
+  stopScript = scripts.stop data, initialContext
 
-  projectDir = "#{instance.options.project}-#{instance.name}"
+  projectDir = "#{data.instance.options.project}-#{data.instance.name}"
   scriptDir = "#{scriptBaseDir}/#{projectDir}"
   startScriptPath = "#{scriptDir}/start.sh"
   stopScriptPath = "#{scriptDir}/stop.sh"
@@ -117,8 +63,7 @@ agent.on 'start', (data) ->
 
 agent.on 'stop', (data) ->
   console.log 'stopApp', data
-  instance = data.instance
-  projectDir = "#{instance.options.project}-#{instance.name}"
+  projectDir = "#{data.instance.options.project}-#{data.instance.name}"
   scriptDir = "#{scriptBaseDir}/#{projectDir}"
   stopScriptPath = "#{scriptDir}/stop.sh"
   execScript stopScriptPath, ->
