@@ -84,6 +84,6 @@ agent.on '/storage/create', (params, {name, source}, callback) ->
   if source
     srcpath = path.join dataDir, domain, source
     # fs.copy srcpath, targetpath, callback
-    child_process.exec "sudo cp -rp #{srcpath} #{targetpath}", callback
+    child_process.exec "cp -rp #{srcpath} #{targetpath}", callback
   else
     fs.mkdirs targetpath, callback

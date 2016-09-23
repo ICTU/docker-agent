@@ -1,6 +1,6 @@
 {
   "name": "ictu-dashboard-agent",
-  "version": "4.3.1",
+  "version": "4.3.2",
   "description": "A dashboard agent",
   "main": "index.coffee",
   "scripts": {
