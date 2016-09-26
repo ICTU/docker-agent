@@ -72,8 +72,15 @@ agent.on 'stop', (data) ->
 
 agent.on '/storage/list', (params, data, callback) ->
   srcpath = path.join dataDir, domain
-  callback null, fs.readdirSync(srcpath).filter (file) ->
-    fs.statSync(path.join(srcpath, file)).isDirectory()
+  dirList = fs.readdirSync srcpath
+  files = dirList.map (file) ->
+    stat = fs.statSync path.join(srcpath, file)
+    if stat.isDirectory()
+      name: file
+      created: stat.birthtime
+      isLocked: ".#{file}.copy.lock" in dirList
+  .filter (file) -> file?
+  callback null, files
 
 agent.on '/storage/delete', ({name}, data, callback) ->
   srcpath = path.join dataDir, domain, name
@@ -83,7 +90,9 @@ agent.on '/storage/create', (params, {name, source}, callback) ->
   targetpath = path.join dataDir, domain, name
   if source
     srcpath = path.join dataDir, domain, source
-    # fs.copy srcpath, targetpath, callback
-    child_process.exec "cp -rp #{srcpath} #{targetpath}", callback
+    lockFile = path.join dataDir, domain, ".#{name}.copy.lock"
+    fs.writeFile lockFile, "Copying #{srcpath} to #{targetpath}..."
+    child_process.exec "cp -rp #{srcpath} #{targetpath}", ->
+      fs.unlink lockFile, callback
   else
     fs.mkdirs targetpath, callback
