@@ -15,4 +15,6 @@ RUN npm install
 
 EXPOSE 80
 
+HEALTHCHECK --interval=30s --timeout=5s CMD curl --fail -sS http://localhost/version &> /dev/null
+
 CMD ["npm", "start"]
