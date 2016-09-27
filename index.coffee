@@ -39,7 +39,7 @@ writeFile = (scriptPath, script, cb) ->
       cb and cb()
 
 execScript = (scriptPath, cb) ->
-  child_process.exec scriptPath, {shell: '/bin/bash'}, (err, stdout, stderr) ->
+  child_process.exec "bash #{scriptPath}", {shell: '/bin/bash'}, (err, stdout, stderr) ->
     console.error err if err
     cb?(stdout: stdout, stderr: stderr)
 
