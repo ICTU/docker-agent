@@ -28,6 +28,9 @@ initialContext =
 
 console.log 'Agent InitialContext', initialContext
 
+# remove all storage bucket lock files
+child_process.exec "rm #{path.join dataDir, domain, '.*.lock'}"
+
 agent = server.agent {name: packageJson.name , version: packageJson.version}
 
 writeFile = (scriptPath, script, cb) ->
@@ -87,17 +90,17 @@ agent.on '/storage/list', (params, data, callback) ->
 agent.on '/storage/delete', ({name}, data, callback) ->
   srcpath = path.join dataDir, domain, name
   lockFile = path.join dataDir, domain, ".#{name}.delete.lock"
-  fs.writeFile lockFile, "Deleting #{srcpath}..."
-  fs.remove srcpath, ->
-    fs.unlink lockFile, callback
+  fs.writeFile lockFile, "Deleting #{srcpath}...", ->
+    fs.remove srcpath, ->
+      fs.unlink lockFile, callback
 
 agent.on '/storage/create', (params, {name, source}, callback) ->
   targetpath = path.join dataDir, domain, name
   if source
     srcpath = path.join dataDir, domain, source
     lockFile = path.join dataDir, domain, ".#{name}.copy.lock"
-    fs.writeFile lockFile, "Copying #{srcpath} to #{targetpath}..."
-    child_process.exec "cp -rp #{srcpath} #{targetpath}", ->
-      fs.unlink lockFile, callback
+    fs.writeFile lockFile, "Copying #{srcpath} to #{targetpath}...", ->
+      child_process.exec "cp -rp #{srcpath} #{targetpath}", ->
+        fs.unlink lockFile, callback
   else
     fs.mkdirs targetpath, callback
