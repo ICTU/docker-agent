@@ -55,12 +55,17 @@ function notify_on_failure {
 }
 
 function remove_existing_instances {
+	{{#each services}}
+	DOCKERNAME="{{service}}-$PROJECT-$INSTANCE"
+	DOCKERNETNAME="net-$DOCKERNAME"
+	DOCKERSSHDNAME="sshd-$DOCKERNAME"
 	docker kill $DOCKERNETNAME 2>/dev/null || true
 	docker rm -v $DOCKERNETNAME 2>/dev/null || true
 	docker kill $DOCKERNAME 2>/dev/null || true
 	docker rm -v $DOCKERNAME 2>/dev/null || true
 	docker kill $DOCKERSSHDNAME 2>/dev/null || true
 	docker rm -v $DOCKERSSHDNAME 2>/dev/null || true
+	{{/each}}
 }
 
 function cleanup_on_failure {
@@ -91,14 +96,14 @@ function pull_image_{{service}} {
 }
 {{/each}}
 
+# Remove any left-behind instances
+remove_existing_instances
+
 {{#each services}}
 function start_{{service}} {
 	DOCKERNAME="{{service}}-$PROJECT-$INSTANCE"
 	DOCKERNETNAME="net-$DOCKERNAME"
 	DOCKERSSHDNAME="sshd-$DOCKERNAME"
-
-	# Remove any left-behind instances
-	remove_existing_instances
 
 	# Prepare the volumes
 	{{#each volumes}}
