@@ -74,17 +74,22 @@ agent.on '/storage/list', (params, data, callback) ->
   srcpath = path.join dataDir, domain
   dirList = fs.readdirSync srcpath
   files = dirList.map (file) ->
+    copyLock = ".#{file}.copy.lock"
+    deleteLock = ".#{file}.delete.lock"
     stat = fs.statSync path.join(srcpath, file)
     if stat.isDirectory()
       name: file
       created: stat.birthtime
-      isLocked: ".#{file}.copy.lock" in dirList
+      isLocked: copyLock in dirList or deleteLock in dirList
   .filter (file) -> file?
   callback null, files
 
 agent.on '/storage/delete', ({name}, data, callback) ->
   srcpath = path.join dataDir, domain, name
-  fs.remove srcpath, callback
+  lockFile = path.join dataDir, domain, ".#{name}.delete.lock"
+  fs.writeFile lockFile, "Deleting #{srcpath}..."
+  fs.remove srcpath, ->
+    fs.unlink lockFile, callback
 
 agent.on '/storage/create', (params, {name, source}, callback) ->
   targetpath = path.join dataDir, domain, name
