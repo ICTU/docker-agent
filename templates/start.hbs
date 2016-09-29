@@ -148,6 +148,11 @@ curl -XPUT -sS $DASHBOARD_URL -H "Content-Type: application/json" -d '{
 	"meta": {"stateDescription": "Activating service {{service}}"}
 }'
 
+BIGBOAT_PROJECT={{../project}}
+BIGBOAT_APPLICATION_NAME={{../appName}}
+BIGBOAT_INSTANCE_NAME={{../instance}}
+BIGBOAT_SERVICE_NAME={{service}}
+
 docker run -d \
 --restart=always \
 --name $DOCKERNAME \

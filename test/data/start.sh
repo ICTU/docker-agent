@@ -155,6 +155,11 @@ curl -XPUT -sS $DASHBOARD_URL -H "Content-Type: application/json" -d '{
 	"meta": {"stateDescription": "Activating service cassandra"}
 }'
 
+BIGBOAT_PROJECT=infra
+BIGBOAT_APPLICATION_NAME=kong
+BIGBOAT_INSTANCE_NAME=kong
+BIGBOAT_SERVICE_NAME=cassandra
+
 docker run -d \
 --restart=always \
 --name $DOCKERNAME \
@@ -283,6 +288,11 @@ curl -XPUT -sS $DASHBOARD_URL -H "Content-Type: application/json" -d "{ \
 curl -XPUT -sS $DASHBOARD_URL -H "Content-Type: application/json" -d '{
 	"meta": {"stateDescription": "Activating service www"}
 }'
+
+BIGBOAT_PROJECT=infra
+BIGBOAT_APPLICATION_NAME=kong
+BIGBOAT_INSTANCE_NAME=kong
+BIGBOAT_SERVICE_NAME=www
 
 docker run -d \
 --restart=always \
