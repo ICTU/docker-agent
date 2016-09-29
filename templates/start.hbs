@@ -159,6 +159,10 @@ docker run -d \
 --label bigboat/instance/name={{../instance}} \
 --label bigboat/service/name={{service}} \
 --label bigboat/container/type=service \
+-e BIGBOAT_PROJECT={{../project}} \
+-e BIGBOAT_APPLICATION_NAME={{../appName}} \
+-e BIGBOAT_INSTANCE_NAME={{../instance}} \
+-e BIGBOAT_SERVICE_NAME={{service}} \
 {{#mapDocker}}-v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker{{/mapDocker}} \
 {{{dockervolumes}}} \
 {{{volumesfrom}}} \

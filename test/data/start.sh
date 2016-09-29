@@ -166,6 +166,10 @@ docker run -d \
 --label bigboat/instance/name=kong \
 --label bigboat/service/name=cassandra \
 --label bigboat/container/type=service \
+-e BIGBOAT_PROJECT=infra \
+-e BIGBOAT_APPLICATION_NAME=kong \
+-e BIGBOAT_INSTANCE_NAME=kong \
+-e BIGBOAT_SERVICE_NAME=cassandra \
  \
  \
  \
@@ -291,6 +295,10 @@ docker run -d \
 --label bigboat/instance/name=kong \
 --label bigboat/service/name=www \
 --label bigboat/container/type=service \
+-e BIGBOAT_PROJECT=infra \
+-e BIGBOAT_APPLICATION_NAME=kong \
+-e BIGBOAT_INSTANCE_NAME=kong \
+-e BIGBOAT_SERVICE_NAME=www \
  \
  \
  \
