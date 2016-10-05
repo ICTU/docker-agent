@@ -172,6 +172,7 @@ docker run -d \
 {{{dockervolumes}}} \
 {{{volumesfrom}}} \
 {{{attribute "expose" "--expose="}}} \
+{{#if entrypoint}}--entrypoint={{{entrypoint}}}{{/if}} \
 {{#if privileged}}--privileged{{/if}} \
 {{#if user}}-u {{user}}{{/if}} \
 {{#if mem_limit}}-m {{mem_limit}}{{/if}} \

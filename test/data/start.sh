@@ -183,6 +183,7 @@ docker run -d \
  \
  \
  \
+ \
 -v /etc/localtime:/etc/localtime:ro mashape/cassandra  > /dev/null
 
 
@@ -313,6 +314,7 @@ docker run -d \
  \
  \
  \
+--entrypoint=bash \
  \
  \
  \

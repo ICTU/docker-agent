@@ -5,12 +5,12 @@ scripts = require '../lib/scripts'
 describe 'Start script', ->
   it 'should be correctly generated', ->
     actual = scripts.start test.data, test.context
-    assert.equal test.expected.start.trim(), actual.trim()
+    assert.equal actual.trim(),test.expected.start.trim()
 
 describe 'Stop script', ->
   it 'should be correctly generated', ->
     actual = scripts.stop test.data, test.context
-    assert.equal test.expected.stop.trim(), actual.trim()
+    assert.equal actual.trim(), test.expected.stop.trim()
 
 test =
   data:
@@ -25,6 +25,7 @@ test =
         'www':
           'image': 'mashape/kong:0.5.2'
           'links': [ 'cassandra' ]
+          'entrypoint': 'bash'
       'parameter_key': '_#_'
       '_definition':
         'name': 'kong'
@@ -32,6 +33,7 @@ test =
         'www':
           'image': 'mashape/kong:0.5.2'
           'links': [ 'cassandra' ]
+          'entrypoint': 'bash'
         'cassandra': 'image': 'mashape/cassandra'
     'instance':
       'name': 'kong'
