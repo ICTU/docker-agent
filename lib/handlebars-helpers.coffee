@@ -1,23 +1,50 @@
+reduceVolumes = (root, volumes, cb) ->
+  volumes?.reduce (prev, volume) =>
+    parsed = volume.match /^((\/[^:]+)|(\/[^:]+):(\/[^:]+))(:ro|:rw)?(:shared|:do_not_persist)?$/
+    if parsed
+      cb prev, root, volumes, parsed
+    else
+      console.error "Invalid volume mapping: #{volume}"
+      prev
+  , ""
+
+computeExternalPath = (context, parsedPath, service) ->
+  [all, ignore, simplePath, mappedPathExt, mappedPathInt, permissions, options] = parsedPath
+  if context.storageBucket and options isnt ':do_not_persist'
+    basePath = "#{context.dataDir}/#{context.project}/#{context.storageBucket}"
+    basePath +=  "/__SHARED__" if options is ':shared'
+    if mappedPathExt
+       "#{basePath}#{mappedPathExt}"
+    else
+      "#{basePath}/#{service}#{simplePath}"
+  else
+    ''
+
 module.exports = (ctx) ->
   literal: (content) -> content
-  dockervolumes: (data)->
-    root = data.data.root
-    @volumes?.reduce (prev, volume) =>
-      parsed = volume.match /^((\/[^:]+)|(\/[^:]+):(\/[^:]+))(:ro|:rw)?(:shared|:do_not_persist)?$/
-      if parsed
-        [all, ignore, simplePath, mappedPathExt, mappedPathInt, permissions, options] = parsed
-        mapping = "#{root.dataDir}/#{root.project}/#{root.instance}/#{@service}#{simplePath}:#{simplePath}"
-        if mappedPathExt
-          if options is ':shared'
-            mapping = "#{root.sharedDataDir}/#{root.project}#{mappedPathExt}:#{mappedPathInt}"
+  createVolumes: (data) ->
+    reduceVolumes data.data.root, @volumes, (prev, root, volumes, parsed) =>
+      dir = computeExternalPath root, parsed, @service
+      if dir
+        """#{prev}
+        mkdir -m 777 -p #{dir}
+        """
+      else
+        prev
+
+  dockervolumes: (data) ->
+    reduceVolumes data.data.root, @volumes, (prev, root, volumes, parsed) =>
+      [all, ignore, simplePath, mappedPathExt, mappedPathInt, permissions, options] = parsed
+      extDir = computeExternalPath root, parsed, @service
+      if extDir
+        mapping = if mappedPathExt
+             "#{extDir}:#{mappedPathInt}"
           else
-            mapping = "#{root.dataDir}/#{root.project}/#{root.instance}/#{@service}#{mappedPathExt}:#{mappedPathInt}"
-        if options is ':do_not_persist' then mapping = simplePath or mappedPathInt
+            "#{extDir}:#{simplePath}"
         "#{prev}-v #{mapping}#{permissions or ''} "
       else
-        console.error "Invalid volume mapping: #{volume}"
-        prev
-    , ""
+        "#{prev}-v #{simplePath or mappedPathInt}#{permissions or ''} "
+
 
   volumesfrom: (data) ->
     root = data.data.root
@@ -39,7 +66,6 @@ module.exports = (ctx) ->
 
 
   mapDocker: (context) ->
-    console.log 'mapDocker', @, context
     if context.mapDocker or context.map_docker
       context.fn(this)
     else context.inverse(this)

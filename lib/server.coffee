@@ -3,7 +3,7 @@ request         = require 'request'
 server          = require 'docker-dashboard-agent-api'
 url             = require 'url'
 
-dockerHost      = process.env.DOCKER_HOST
+dockerHost      = process.env.DOCKER_HOST or 'unix:///var/run/docker.sock'
 
 sendRequest = (endpoint, payload) ->
   console.dir payload

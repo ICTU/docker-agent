@@ -1,8 +1,18 @@
 agent:
-  image: docker-registry.isd.ictu:5000/dashboard-agent
+  image: ictu/dashboard-agent:4.3
   environment:
-    - USER=core
-    - BASE_DIR=/home/core
-    - PRIVATE_KEY=/root/.ssh/id_rsa
+      - USER=core
+      - AUTH_TOKEN={{authToken}}
+      - DOMAIN={{project}}
+      - HTTP_PORT=80
+      - ETCD_BASEURL=http://{{etcd_url}}:4001
+      - DATA_DIR=/local/data
+      - SCRIPT_BASE_DIR=/local/data/scripts
+      - SHARED_DATA_DIR=/mnt/data
+      - ROOT_URL=http://{{root_url}}
+      - TARGET_VLAN=3080
+      - SYSLOG_URL=udp://{{syslog_url}}:5454
   volumes:
-    - /root/.ssh:/root/.ssh:ro
+      - /local/data
+      - /mnt/data
+      - /var/run/docker.sock:/var/run/docker.sock
