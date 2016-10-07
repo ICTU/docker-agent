@@ -1,18 +1,21 @@
 agent:
   image: ictu/dashboard-agent:4.3
   environment:
-      - USER=core
-      - AUTH_TOKEN={{authToken}}
-      - DOMAIN={{project}}
-      - HTTP_PORT=80
-      - ETCD_BASEURL=http://{{etcd_url}}:4001
-      - DATA_DIR=/local/data
-      - SCRIPT_BASE_DIR=/local/data/scripts
-      - SHARED_DATA_DIR=/mnt/data
-      - ROOT_URL=http://{{root_url}}
-      - TARGET_VLAN=3080
-      - SYSLOG_URL=udp://{{syslog_url}}:5454
+    - USER=core
+    - AUTH_TOKEN={{authToken}}
+    - DOCKER_HOST=unix:///swarm/swarm.sock
+    - TARGET_NIC={{targetNIC}}
+    - TARGET_VLAN={{vlan}}
+    - HTTP_PORT=80
+    - ETCD_BASEURL=http://${etcdIP}:4001
+    - BASE_DIR=/mnt/data/scripts
+    - DATA_DIR=/mnt/data
+    - SCRIPT_BASE_DIR=/mnt/data/scripts
+    - SHARED_DATA_DIR=/mnt/data
+    - ROOT_URL={{rootURL}}
+    - SYSLOG_URL={{syslogURL}}
+    - DOMAIN={{project}}
   volumes:
-      - /local/data
-      - /mnt/data
-      - /var/run/docker.sock:/var/run/docker.sock
+    - /local/data
+    - /mnt/data
+    - /var/run/docker.sock:/var/run/docker.sock
