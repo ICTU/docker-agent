@@ -238,7 +238,7 @@ curl -XPUT -sS $DASHBOARD_URL -H "Content-Type: application/json" -d "{ \
 curl -XPUT -sS $DASHBOARD_URL -H "Content-Type: application/json" -d "{ \
 	\"services\": { \
 			\"{{service}}\": { \
-				\"endpoint\": \"{{endpoint}}\" \
+				\"endpoint\": \"{{{endpoint}}}\" \
 			} \
 		} \
 }"

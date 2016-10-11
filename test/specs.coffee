@@ -26,6 +26,7 @@ test =
           'image': 'mashape/kong:0.5.2'
           'links': [ 'cassandra' ]
           'entrypoint': 'bash'
+          'endpoint': ':8080?test=ttt'
       'parameter_key': '_#_'
       '_definition':
         'name': 'kong'

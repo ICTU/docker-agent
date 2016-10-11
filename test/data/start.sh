@@ -343,6 +343,13 @@ curl -XPUT -sS $DASHBOARD_URL -H "Content-Type: application/json" -d "{ \
 }"
 
 
+curl -XPUT -sS $DASHBOARD_URL -H "Content-Type: application/json" -d "{ \
+	\"services\": { \
+			\"www\": { \
+				\"endpoint\": \":8080?test=ttt\" \
+			} \
+		} \
+}"
 
 STEP=$((STEP+1))
 curl -XPUT -sS $DASHBOARD_URL -H "Content-Type: application/json" -d "{ \
