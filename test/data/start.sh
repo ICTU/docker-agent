@@ -310,7 +310,7 @@ docker run -d \
 -e BIGBOAT_APPLICATION_NAME=kong \
 -e BIGBOAT_INSTANCE_NAME=kong \
 -e BIGBOAT_SERVICE_NAME=www \
--v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker \
+-v /var/run/docker.sock:/var/run/docker.sock \
  \
  \
  \

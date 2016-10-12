@@ -67,7 +67,7 @@ module.exports = (ctx) ->
 
   mapDocker: ->
     if @mapDocker or @map_docker
-      '-v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker'
+      '-v /var/run/docker.sock:/var/run/docker.sock'
     else ''
 
   syslogUrl: -> ctx.syslogUrl
