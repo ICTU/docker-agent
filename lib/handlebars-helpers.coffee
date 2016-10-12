@@ -65,10 +65,10 @@ module.exports = (ctx) ->
       ("-e '#{key}=#{value}'" for key, value of @environment).join ' '
 
 
-  mapDocker: (context) ->
-    if context.mapDocker or context.map_docker
-      context.fn(this)
-    else context.inverse(this)
+  mapDocker: ->
+    if @mapDocker or @map_docker
+      '-v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker'
+    else ''
 
   syslogUrl: -> ctx.syslogUrl
 

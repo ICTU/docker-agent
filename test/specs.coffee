@@ -27,6 +27,7 @@ test =
           'links': [ 'cassandra' ]
           'entrypoint': 'bash'
           'endpoint': ':8080?test=ttt'
+          'map_docker': true
       'parameter_key': '_#_'
       '_definition':
         'name': 'kong'

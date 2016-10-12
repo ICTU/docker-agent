@@ -168,7 +168,7 @@ docker run -d \
 -e BIGBOAT_APPLICATION_NAME={{../appName}} \
 -e BIGBOAT_INSTANCE_NAME={{../instance}} \
 -e BIGBOAT_SERVICE_NAME={{service}} \
-{{#mapDocker}}-v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker{{/mapDocker}} \
+{{mapDocker}} \
 {{{dockervolumes}}} \
 {{{volumesfrom}}} \
 {{{attribute "expose" "--expose="}}} \
