@@ -72,30 +72,57 @@ agent.on 'stop', (data) ->
   execScript stopScriptPath, ->
     console.log 'Executed', stopScriptPath
 
-
 agent.on '/storage/list', (params, data, callback) ->
   srcpath = path.join dataDir, domain
   dirList = fs.readdirSync srcpath
   files = dirList.map (file) ->
     copyLock = ".#{file}.copy.lock"
     deleteLock = ".#{file}.delete.lock"
+    sizeLock = ".#{file}.size.lock"
     stat = fs.statSync path.join(srcpath, file)
     if stat.isDirectory()
       name: file
       created: stat.birthtime
       isLocked: copyLock in dirList or deleteLock in dirList
+      isSizeLocked: sizeLock in dirList
   .filter (file) -> file?
   callback null, files
+
+agent.on '/storage/usage', ({name}, data, callback) ->
+  console.log "Retrieving usage #{dataDir}"
+  child_process.exec "df #{dataDir} | tail -1 | awk '{ print $2 }{ print $3}{ print $5}'", (err, stdout, stderr) ->
+    if err
+      console.error err
+      callback null, stderr
+    totalSize = stdout.split("\n")[0]
+    usedSize = stdout.split("\n")[1]
+    percentage = stdout.split("\n")[2]
+    callback null, { name: dataDir, total: totalSize, used: usedSize, percentage: percentage }
+
+agent.on '/storage/size', ({name}, data, callback) ->
+  srcpath = path.join dataDir, domain, name
+  lockFile = path.join dataDir, domain, ".#{name}.size.lock"
+  console.log "Retrieving size #{srcpath}"
+  fs.writeFile lockFile, "Retrieving size #{srcpath} ...", ->
+    child_process.exec "du -sh #{srcpath} | awk '{ print $1 }'", (err, stdout, stderr) ->
+      if err
+        console.error err
+        fs.unlink lockFile, callback(null, stderr)
+      bucketSize = stdout.replace(/^\s+|\s+$/g, '')
+      fs.unlink lockFile, ->
+        callback null, { name: name, size: bucketSize}
 
 agent.on '/storage/delete', ({name}, data, callback) ->
   srcpath = path.join dataDir, domain, name
   lockFile = path.join dataDir, domain, ".#{name}.delete.lock"
+  console.log "Deleting bucket #{srcpath}"
   fs.writeFile lockFile, "Deleting #{srcpath}...", ->
     fs.remove srcpath, ->
       fs.unlink lockFile, callback
 
 agent.on '/storage/create', (params, {name, source}, callback) ->
   targetpath = path.join dataDir, domain, name
+  console.log "Creating bucket #{targetpath}"
   if source
     srcpath = path.join dataDir, domain, source
     lockFile = path.join dataDir, domain, ".#{name}.copy.lock"
