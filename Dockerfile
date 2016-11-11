@@ -1,6 +1,6 @@
 FROM docker:1.9
 
-RUN apk --update --no-cache add nodejs bash jq nmap-ncat
+RUN apk --update --no-cache add nodejs bash jq nmap-ncat coreutils
 
 RUN curl -Ss -L https://github.com/coreos/etcd/releases/download/v2.2.5/etcd-v2.2.5-linux-amd64.tar.gz -o /tmp/etcd-v2.2.5-linux-amd64.tar.gz \
   && tar xzvf /tmp/etcd-v2.2.5-linux-amd64.tar.gz -C /tmp/ \
