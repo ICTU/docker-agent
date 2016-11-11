@@ -88,7 +88,7 @@ agent.on '/storage/list', (params, data, callback) ->
   .filter (file) -> file?
   callback null, files
 
-agent.on '/storage/usage', ({name}, data, callback) ->
+agent.on '/datastore/usage', ({name}, data, callback) ->
   console.log "Retrieving usage #{dataDir}"
   child_process.exec "df #{dataDir} | tail -1 | awk '{ print $2 }{ print $3}{ print $5}'", (err, stdout, stderr) ->
     if err
@@ -104,7 +104,7 @@ agent.on '/storage/size', ({name}, data, callback) ->
   lockFile = path.join dataDir, domain, ".#{name}.size.lock"
   console.log "Retrieving size #{srcpath}"
   fs.writeFile lockFile, "Retrieving size #{srcpath} ...", ->
-    child_process.exec "du -sh #{srcpath} | awk '{ print $1 }'", (err, stdout, stderr) ->
+    child_process.exec "du -b #{srcpath} | awk '{ print $1 }'", (err, stdout, stderr) ->
       if err
         console.error err
         fs.unlink lockFile, callback(null, stderr)
