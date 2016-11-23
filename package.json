@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "coffee-script": "~1.10.0",
-    "docker-dashboard-agent-api": "^4.4.0",
+    "docker-dashboard-agent-api": "4.4.0",
     "forever": "^0.15.1",
     "fs-extra": "^0.30.0",
     "handlebars": "^4.0.5",

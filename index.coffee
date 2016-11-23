@@ -2,6 +2,7 @@ child_process = require 'child_process'
 _             = require 'lodash'
 fs            = require 'fs-extra'
 path          = require 'path'
+request         = require 'request'
 
 server        = require './lib/server'
 env           = require './lib/env'
@@ -17,6 +18,7 @@ targetVlan    = env.assert 'TARGET_VLAN'
 syslogUrl     = env.assert 'SYSLOG_URL'
 scriptBaseDir = env.assert 'SCRIPT_BASE_DIR'
 domain        = env.assert 'DOMAIN'
+remotefsUrl   = env.assert 'REMOTEFS_URL'
 
 initialContext =
   etcdCluster: etcdBaseUrl
@@ -25,6 +27,7 @@ initialContext =
   agentUrl: rootUrl
   targetVlan: targetVlan
   syslogUrl: syslogUrl
+  remotefsUrl: remotefsUrl
 
 console.log 'Agent InitialContext', initialContext
 
@@ -32,6 +35,15 @@ console.log 'Agent InitialContext', initialContext
 child_process.exec "rm #{path.join dataDir, domain, '.*.lock'}"
 
 agent = server.agent {name: packageJson.name , version: packageJson.version}
+
+remoteFs = (cmd, payload, cb) ->
+  request
+    url: "#{remotefsUrl}/fs/#{cmd}"
+    method: 'POST'
+    json: payload
+    , (err, res, body) ->
+      console.error err if err
+      cb err, body
 
 writeFile = (scriptPath, script, cb) ->
   fs.writeFile scriptPath, script, {mode: 0o744}, (err) ->
@@ -100,17 +112,13 @@ agent.on '/datastore/usage', ({name}, data, callback) ->
     callback null, { name: dataDir, total: totalSize, used: usedSize, percentage: percentage }
 
 agent.on '/storage/size', ({name}, data, callback) ->
-  srcpath = path.join dataDir, domain, name
+  srcpath = path.join '/', domain, name
   lockFile = path.join dataDir, domain, ".#{name}.size.lock"
   console.log "Retrieving size #{srcpath}"
   fs.writeFile lockFile, "Retrieving size #{srcpath} ...", ->
-    child_process.exec "du -sb #{srcpath} | awk '{ print $1 }'", (err, stdout, stderr) ->
-      if err
-        console.error err
-        fs.unlink lockFile, callback(null, stderr)
-      bucketSize = stdout.replace(/^\s+|\s+$/g, '')
+    remoteFs 'du', {dir: srcpath}, (err, response) ->
       fs.unlink lockFile, ->
-        callback null, { name: name, size: bucketSize}
+        callback null, { name: name, size: response.size}
 
 agent.on '/storage/delete', ({name}, data, callback) ->
   srcpath = path.join dataDir, domain, name
@@ -121,13 +129,13 @@ agent.on '/storage/delete', ({name}, data, callback) ->
       fs.unlink lockFile, callback
 
 agent.on '/storage/create', (params, {name, source}, callback) ->
-  targetpath = path.join dataDir, domain, name
+  targetpath = path.join '/', domain, name
   console.log "Creating bucket #{targetpath}"
   if source
-    srcpath = path.join dataDir, domain, source
+    srcpath = path.join '/', domain, source
     lockFile = path.join dataDir, domain, ".#{name}.copy.lock"
     fs.writeFile lockFile, "Copying #{srcpath} to #{targetpath}...", ->
-      child_process.exec "cp -rp #{srcpath} #{targetpath}", ->
+      remoteFs 'cp', {source: srcpath, destination: targetpath}, ->
         fs.unlink lockFile, callback
   else
     fs.mkdirs targetpath, callback
