@@ -15,6 +15,7 @@ agent:
     - ROOT_URL={{rootURL}}
     - SYSLOG_URL={{syslogURL}}
     - DOMAIN={{project}}
+    - REMOTEFS_URL={{remotefsUrl}}
   volumes:
     - /local/data
     - /mnt/data
