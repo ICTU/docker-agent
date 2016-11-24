@@ -114,18 +114,18 @@ agent.on '/datastore/usage', ({name}, data, callback) ->
 agent.on '/storage/size', ({name}, data, callback) ->
   srcpath = path.join '/', domain, name
   lockFile = path.join dataDir, domain, ".#{name}.size.lock"
-  console.log "Retrieving size #{srcpath}"
+  console.log "Retrieving size of #{srcpath}"
   fs.writeFile lockFile, "Retrieving size #{srcpath} ...", ->
     remoteFs 'du', {dir: srcpath}, (err, response) ->
       fs.unlink lockFile, ->
         callback null, { name: name, size: response.size}
 
 agent.on '/storage/delete', ({name}, data, callback) ->
-  srcpath = path.join dataDir, domain, name
+  srcpath = path.join '/', domain, name
   lockFile = path.join dataDir, domain, ".#{name}.delete.lock"
   console.log "Deleting bucket #{srcpath}"
   fs.writeFile lockFile, "Deleting #{srcpath}...", ->
-    fs.remove srcpath, ->
+    remoteFs 'rm', {dir: srcpath}, ->
       fs.unlink lockFile, callback
 
 agent.on '/storage/create', (params, {name, source}, callback) ->
