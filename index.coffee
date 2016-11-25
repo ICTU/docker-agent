@@ -129,13 +129,14 @@ agent.on '/storage/delete', ({name}, data, callback) ->
       fs.unlink lockFile, callback
 
 agent.on '/storage/create', (params, {name, source}, callback) ->
-  targetpath = path.join '/', domain, name
-  console.log "Creating bucket #{targetpath}"
   if source
     srcpath = path.join '/', domain, source
+    targetpath = path.join '/', domain, name
     lockFile = path.join dataDir, domain, ".#{name}.copy.lock"
     fs.writeFile lockFile, "Copying #{srcpath} to #{targetpath}...", ->
       remoteFs 'cp', {source: srcpath, destination: targetpath}, ->
         fs.unlink lockFile, callback
   else
+    targetpath = path.join dataDir, domain, name
+    console.log "Creating bucket #{targetpath}"
     fs.mkdirs targetpath, callback
