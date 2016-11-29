@@ -17,6 +17,7 @@ An agent implementation for [ICTU/docker-dashboard](https://github.com/ICTU/dock
       -e SHARED_DATA_DIR=/mnt/shareddata \
       -e TARGET_VLAN=3030 \
       -e SYSLOG_URL=udp://logstashhost:5454 \
+      -e REMOTEFS_URL=http://remotefs.url \
       -v /local/data:/local/data \
       -v /mnt/data:/mnt/data
       -v /var/run/docker.sock:/var/run/docker.sock
